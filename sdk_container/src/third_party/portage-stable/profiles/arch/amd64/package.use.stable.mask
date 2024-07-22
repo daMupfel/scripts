@@ -17,10 +17,9 @@
 
 #--- END OF EXAMPLES ---
 
-# Ionen Wolkens <ionen@gentoo.org> (2024-04-16)
-# Temporary mask to give a little bit of time before stabilizing
-# the just added dev-qt/qtlanguageserver-6.7.0 for amd64
-dev-qt/qtdeclarative:6 qmlls
+# Zen <dev@pyl.onl> (2024-07-01)
+# UGRD support is still experimental, no stable keywords for now
+sys-kernel/installkernel ugrd
 
 # Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2024-03-17)
 # Experimental, virt-firmware is keyworded only unstable
@@ -75,7 +74,6 @@ net-misc/curl rustls curl_ssl_rustls
 
 # Sam James <sam@gentoo.org> (2022-12-07)
 # Needs unstable media-libs/libvpl
-media-libs/gst-plugins-bad qsv
 media-video/ffmpeg qsv
 
 # Adel Kara Slimane <adel.ks@zegrapher.com> (2022-03-14)

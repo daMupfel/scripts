@@ -31,7 +31,7 @@ if [[ ${PV} == *9999* ]]; then
 	declare -A SUBPROJECTS=(
 		[keycodemapdb]="f5772a62ec52591ff6870b7e8ef32482371f22c6"
 		[berkeley-softfloat-3]="b64af41c3276f97f0e181920400ee056b9c88037"
-		[berkeley-testfloat-3]="40619cbb3bf32872df8c53cc457039229428a263"
+		[berkeley-testfloat-3]="e7af9751d9f9fd3b47911f51a5cfd08af256a9ab"
 	)
 
 	for proj in "${!SUBPROJECTS[@]}"; do
@@ -280,6 +280,7 @@ BDEPEND="
 	$(python_gen_impl_dep)
 	dev-lang/perl
 	>=dev-build/meson-0.63.0
+	app-alternatives/ninja
 	dev-python/pip[${PYTHON_USEDEP}]
 	virtual/pkgconfig
 	doc? (
@@ -315,15 +316,17 @@ RDEPEND="
 "
 
 PATCHES=(
-	"${FILESDIR}"/${PN}-8.0.0-disable-keymap.patch
-	"${FILESDIR}"/${PN}-7.1.0-capstone-include-path.patch
-	"${FILESDIR}"/${PN}-8.1.0-also-build-virtfs-proxy-helper.patch
+	"${FILESDIR}"/${PN}-9.0.0-disable-keymap.patch
+	"${FILESDIR}"/${PN}-9.0.0-capstone-include-path.patch
+	"${FILESDIR}"/${PN}-9.0.0-also-build-virtfs-proxy-helper.patch
 	"${FILESDIR}"/${PN}-8.1.0-skip-tests.patch
 	"${FILESDIR}"/${PN}-8.1.0-find-sphinx.patch
+
 )
 
 QA_PREBUILT="
 	usr/share/qemu/hppa-firmware.img
+	usr/share/qemu/hppa-firmware64.img
 	usr/share/qemu/openbios-ppc
 	usr/share/qemu/openbios-sparc64
 	usr/share/qemu/openbios-sparc32
@@ -401,6 +404,8 @@ pkg_pretend() {
 			use vhost-net && CONFIG_CHECK+=" ~VHOST_NET"
 			ERROR_VHOST_NET="You must enable VHOST_NET to have vhost-net"
 			ERROR_VHOST_NET+=" support"
+			use test && CONFIG_CHECK+=" IP_MULTICAST"
+			ERROR_IP_MULTICAST="Test suite requires IP_MULTICAST"
 
 			if use amd64 || use x86 || use amd64-linux || use x86-linux; then
 				if grep -q AuthenticAMD /proc/cpuinfo; then

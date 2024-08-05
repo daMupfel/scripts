@@ -31,7 +31,7 @@ REQUIRED_USE="test? ( tofu )"
 # Existence of executables is checked during configuration.
 # Note: On each bump, update dep bounds on each version from configure.ac!
 DEPEND="
-	>=dev-libs/libassuan-2.5.0
+	>=dev-libs/libassuan-2.5.0:=
 	>=dev-libs/libgcrypt-1.9.1:=
 	>=dev-libs/libgpg-error-1.46
 	>=dev-libs/libksba-1.6.3
@@ -69,6 +69,7 @@ DOCS=(
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-2.1.20-gpgscm-Use-shorter-socket-path-lengts-to-improve-tes.patch
+	"${FILESDIR}"/${PN}-2.4.5-revert-rfc4880bis.patch # bug #926186
 )
 
 src_prepare() {
@@ -94,6 +95,10 @@ src_prepare() {
 	# which in turn requires discovery in Autoconf, something that upstream deeply resents.
 	sed -e "/DirectoryMode=/a ExecStartPost=-${EPREFIX}/bin/systemctl --user set-environment SSH_AUTH_SOCK=%t/gnupg/S.gpg-agent.ssh" \
 		-i "${T}"/gpg-agent-ssh.socket || die
+
+	# definition of getpeername etc uses different things like socket_fd_t
+	[[ ${CHOST} == *-solaris* ]] &&
+		append-cflags $(test-flags-CC -Wno-incompatible-pointer-types)
 }
 
 my_src_configure() {

@@ -1,9 +1,9 @@
 # Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
-inherit libtool linux-info optfeature systemd
+inherit libtool linux-info systemd
 
 if [[ ${PV} == "9999" ]] ; then
 	inherit git-r3 autotools
@@ -11,24 +11,28 @@ if [[ ${PV} == "9999" ]] ; then
 else
 	SRC_URI="https://www.kernel.org/pub/linux/utils/kernel/kexec/${P/_/-}.tar.xz"
 	[[ "${PV}" == *_rc* ]] || \
-	KEYWORDS="amd64 ~arm64 ~ppc64 x86"
+	KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 fi
 
 DESCRIPTION="Load another kernel from the currently executing Linux kernel"
 HOMEPAGE="https://kernel.org/pub/linux/utils/kernel/kexec/"
 
+S="${WORKDIR}/${P/_/-}"
+
 LICENSE="GPL-2"
 SLOT="0"
-IUSE="booke lzma xen zlib"
+IUSE="booke lzma selinux xen zlib"
 
 REQUIRED_USE="lzma? ( zlib )"
 
 DEPEND="
 	lzma? ( app-arch/xz-utils )
-	zlib? ( sys-libs/zlib )"
-RDEPEND="${DEPEND}"
-
-S="${WORKDIR}/${P/_/-}"
+	zlib? ( sys-libs/zlib )
+"
+RDEPEND="
+	${DEPEND}
+	selinux? ( sec-policy/selinux-kdump )
+"
 
 CONFIG_CHECK="~KEXEC"
 
@@ -88,24 +92,16 @@ src_install() {
 	dodoc "${FILESDIR}"/README.Gentoo
 
 	newinitd "${FILESDIR}"/kexec-r2.init kexec
-	newconfd "${FILESDIR}"/kexec.conf-2.0.4 kexec
 
 	insinto /etc
 	doins "${FILESDIR}"/kexec.conf
+	dosym ../kexec.conf /etc/conf.d/kexec
 
-	insinto /etc/kernel/postinst.d
-	doins "${FILESDIR}"/90_kexec
-
+	dosbin "${FILESDIR}"/kexec-auto-load
 	systemd_dounit "${FILESDIR}"/kexec.service
 }
 
 pkg_postinst() {
-	if systemd_is_booted || has_version sys-apps/systemd; then
-		elog "For systemd support the new config file is"
-		elog "   /etc/kexec.conf"
-		elog "Please adopt it to your needs as there is no autoconfig anymore"
-	fi
-
 	local n_root_args=$(grep -o -- '\<root=' /proc/cmdline 2>/dev/null | wc -l)
 	local has_rootpart_set=no
 	if [[ -f "${EROOT}/etc/conf.d/kexec" ]]; then
@@ -121,7 +117,4 @@ pkg_postinst() {
 		ewarn "in case running system and initramfs do not agree on detected"
 		ewarn "root device name!"
 	fi
-
-	optfeature "automatically updating /etc/kexec.conf on each kernel installation" \
-		"sys-kernel/installkernel[-systemd]"
 }

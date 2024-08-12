@@ -11,7 +11,7 @@ SRC_URI="https://downloads.sourceforge.net/linuxquota/${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ~mips ppc ppc64 ~riscv sparc x86"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86"
 IUSE="ldap netlink nls rpc selinux tcpd"
 
 RDEPEND="
@@ -36,6 +36,7 @@ RDEPEND+=" selinux? ( sec-policy/selinux-quota )"
 PATCHES=(
 	"${FILESDIR}"/${PN}-4.09-configure-bashism.patch
 	"${FILESDIR}"/${PN}-4.09-gettext-version.patch
+	"${FILESDIR}"/${PN}-4.09-fix-building-on-musl.patch
 )
 
 src_prepare() {

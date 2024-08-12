@@ -17,9 +17,29 @@
 
 #--- END OF EXAMPLES ---
 
+# orbea <orbea@riseup.net> (2024-07-19)
+# Unmask the dynarec flag which has amd64 asm.
+games-emulation/rmg -dynarec
+
+# Zen <dev@pyl.onl> (2024-07-01)
+# Unmask the ugrd flag for installkernel. It is keyworded here
+sys-kernel/installkernel -ugrd
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2024-06-23)
+# Pulls in kde-apps/kgpg which is keyworded here
+>=kde-apps/kdeutils-meta-24.05.1 -gpg
+
+# Jared Allard <jared@rgst.io> (2024-06-21)
+# uasm and jwasm include amd64-specific ASM
+app-arch/7zip -uasm -jwasm
+
+# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2024-04-25)
+# ROCm and Level-Zero are amd64-only at the moment
+sys-apps/hwloc -rocm -l0
+
 # Paul Zander <negril.nx+gentoo@gmail.com> (2024-04-20)
 # only keyworded for amd64 currently
-media-gfx/blender -gnome
+media-gfx/blender -gnome -oneapi -renderdoc -vulkan
 
 # Ionen Wolkens <ionen@gentoo.org> (2024-04-16)
 # dev-qt/qtlanguageserver:6 is keyworded here
@@ -75,11 +95,6 @@ sys-kernel/gentoo-kernel-bin -generic-uki
 # dev-qt/qtwebengine:6 is keyworded here.
 dev-python/PyQt6 -pdfium
 
-# Leonardo Hernández Hernández <leohdz172@proton.me> (2023-11-25)
-# media-libs/libdisplay-info (drm) and dev-libs/libliftoff (liftoff)
-# are only available for amd64, arm64 and riscv
->=gui-libs/wlroots-0.17.0 -drm -liftoff
-
 # Jimi Huotari <chiitoo@gentoo.org> (2023-11-22)
 # Unmask on amd64.
 media-video/obs-studio -qsv -websocket
@@ -115,7 +130,7 @@ net-libs/ngtcp2 -ssl
 
 # Matt Jolly <kangie@gentoo.org> (2023-08-10)
 # nghttp3 has been tested to work on amd64
-net-misc/curl -nghttp3
+net-misc/curl -nghttp3 -http3 -quic -curl_quic_openssl
 
 # Sam James <sam@gentoo.org> (2023-07-18)
 # dev-cpp/cppdap is not keyworded in most places
@@ -131,6 +146,7 @@ www-servers/apache -apache2_modules_tls
 
 # Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2023-04-22)
 # snap only works on amd64
+gnome-extra/gnome-software -snap
 kde-plasma/discover -snap
 
 # Sam James <sam@gentoo.org> (2023-04-17)
@@ -141,10 +157,6 @@ dev-lang/ruby -jit
 # Sam James <sam@gentoo.org> (2023-04-03)
 # pytables is available here.
 dev-python/tables -cpudetection
-
-# Craig Andrews <candrews@gentoo.org> (2023-03-09)
-# media-libs/libplacebo is keyworded here
-media-video/ffmpeg -libplacebo
 
 # Yiyang Wu <xgreenlandforwyy@gmail.com> (2023-01-27)
 # AMDGPU enablement depends on dev-libs/rocr-runtime, ~amd64 only
@@ -168,7 +180,6 @@ net-misc/curl -rustls -curl_ssl_rustls
 # Quick Sync Video (through intel-mediasdk or libvpl) is
 # only keyworded on amd64
 media-video/ffmpeg -qsv
-media-libs/gst-plugins-bad -qsv
 
 # WANG Xuerui <xen0n@gentoo.org> (2022-10-07)
 # sys-libs/libsmbios is available here.
@@ -246,6 +257,7 @@ sys-libs/compiler-rt-sanitizers -asan -dfsan -lsan -msan -hwasan -tsan
 sys-libs/compiler-rt-sanitizers -ubsan -safestack -cfi -scudo
 sys-libs/compiler-rt-sanitizers -gwp-asan
 sys-libs/compiler-rt-sanitizers -libfuzzer -memprof -orc -profile -xray
+sys-libs/compiler-rt-sanitizers -ctx-profile
 
 # Sam James <sam@gentoo.org> (2020-10-24)
 # asm redc is only available on amd64,
@@ -324,10 +336,6 @@ dev-java/openjdk:11 -javafx
 # dev-lang/spidermonkey:60[jit] fails to build on most platforms, but does
 # build on amd64.
 >=dev-lang/spidermonkey-60 -jit
-
-# Andreas Sturmlechner <asturm@gentoo.org> (2019-05-09)
-# media-libs/libplacebo is keyworded on amd64
-media-video/vlc -libplacebo
 
 # Denis Lisov <dennis.lissov@gmail.com> (2019-05-09)
 # Overlay can only be built on amd64 and x86

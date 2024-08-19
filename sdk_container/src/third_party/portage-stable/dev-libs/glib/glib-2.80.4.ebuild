@@ -3,7 +3,7 @@
 
 EAPI=8
 PYTHON_REQ_USE="xml(+)"
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{10..13} )
 
 inherit gnome.org gnome2-utils linux-info meson-multilib multilib python-any-r1 toolchain-funcs xdg
 
@@ -12,11 +12,9 @@ HOMEPAGE="https://www.gtk.org/"
 
 LICENSE="LGPL-2.1+"
 SLOT="2"
-IUSE="dbus debug +elf gtk-doc +mime selinux static-libs sysprof systemtap test utils xattr"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+IUSE="dbus debug +elf doc +introspection +mime selinux static-libs sysprof systemtap test utils xattr"
 RESTRICT="!test? ( test )"
-REQUIRED_USE="gtk-doc? ( test )" # Bug #777636
-
-KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
 
 # * elfutils (via libelf) does not build on Windows. gresources are not embedded
 # within ELF binaries on that platform anyway and inspecting ELF binaries from
@@ -28,12 +26,14 @@ KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv 
 # them or just put the (build) deps in that rare consumer instead of recursive
 # RDEPEND here (due to lack of recursive DEPEND).
 RDEPEND="
+	!<dev-libs/gobject-introspection-1.80.1
 	!<dev-util/gdbus-codegen-${PV}
 	>=virtual/libiconv-0-r1[${MULTILIB_USEDEP}]
 	>=dev-libs/libpcre2-10.32:0=[${MULTILIB_USEDEP},unicode(+),static-libs?]
 	>=dev-libs/libffi-3.0.13-r1:=[${MULTILIB_USEDEP}]
 	>=sys-libs/zlib-1.2.8-r1[${MULTILIB_USEDEP}]
 	>=virtual/libintl-0-r2[${MULTILIB_USEDEP}]
+	introspection? ( >=dev-libs/gobject-introspection-1.80.1 )
 	kernel_linux? ( >=sys-apps/util-linux-2.23[${MULTILIB_USEDEP}] )
 	selinux? ( >=sys-libs/libselinux-2.2.2-r5[${MULTILIB_USEDEP}] )
 	xattr? ( !elibc_glibc? ( >=sys-apps/attr-2.4.47-r1[${MULTILIB_USEDEP}] ) )
@@ -46,11 +46,13 @@ BDEPEND="
 	app-text/docbook-xsl-stylesheets
 	dev-libs/libxslt
 	>=sys-devel/gettext-0.19.8
-	gtk-doc? ( >=dev-util/gtk-doc-1.33
-		app-text/docbook-xml-dtd:4.2
-		app-text/docbook-xml-dtd:4.5 )
+	doc? ( >=dev-util/gi-docgen-2023.1 )
+	dev-python/docutils
 	systemtap? ( >=dev-debug/systemtap-1.3 )
 	${PYTHON_DEPS}
+	$(python_gen_any_dep '
+		dev-python/packaging[${PYTHON_USEDEP}]
+	')
 	test? ( >=sys-apps/dbus-1.2.14 )
 	virtual/pkgconfig
 "
@@ -70,6 +72,10 @@ MULTILIB_CHOST_TOOLS=(
 PATCHES=(
 	"${FILESDIR}"/${PN}-2.64.1-mark-gdbus-server-auth-test-flaky.patch
 )
+
+python_check_deps() {
+	python_has_version "dev-python/packaging[${PYTHON_USEDEP}]"
+}
 
 pkg_setup() {
 	if use kernel_linux ; then
@@ -125,6 +131,7 @@ src_prepare() {
 
 	# gdbus-codegen is a separate package
 	sed -i -e '/install_dir/d' gio/gdbus-2.0/codegen/meson.build || die
+	sed -i -e '/install : true/d' gio/gdbus-2.0/codegen/meson.build || die
 
 	# Same kind of meson-0.50 issue with some installed-tests files; will likely be fixed upstream soon
 	sed -i -e '/install_dir/d' gio/tests/meson.build || die
@@ -178,24 +185,25 @@ multilib_src_configure() {
 		#esac
 	#fi
 
+	use debug && EMESON_BUILD_TYPE=debug
 	local emesonargs=(
-		-Dbuildtype=$(usex debug debug plain)
 		-Ddefault_library=$(usex static-libs both shared)
 		-Druntime_dir="${EPREFIX}"/run
 		$(meson_feature selinux)
 		$(meson_use xattr)
 		-Dlibmount=enabled # only used if host_system == 'linux'
-		-Dman=true
+		-Dman-pages=enabled
 		$(meson_use systemtap dtrace)
 		$(meson_use systemtap)
 		$(meson_feature sysprof)
-		$(meson_native_use_bool gtk-doc gtk_doc)
+		$(meson_use doc documentation)
 		$(meson_use test tests)
 		-Dinstalled_tests=false
 		-Dnls=enabled
 		-Doss_fuzz=disabled
 		$(meson_native_use_feature elf libelf)
 		-Dmultiarch=false
+		$(meson_native_use_feature introspection)
 	)
 	meson_src_configure
 }
@@ -214,8 +222,8 @@ multilib_src_test() {
 	addpredict /usr/b
 
 	# Related test is a bit nitpicking
-	mkdir "$G_DBUS_COOKIE_SHA1_KEYRING_DIR"
-	chmod 0700 "$G_DBUS_COOKIE_SHA1_KEYRING_DIR"
+	mkdir "$G_DBUS_COOKIE_SHA1_KEYRING_DIR" || die
+	chmod 0700 "$G_DBUS_COOKIE_SHA1_KEYRING_DIR" || die
 
 	meson_src_test --timeout-multiplier 20 --no-suite flaky
 }
@@ -304,9 +312,9 @@ pkg_postrm() {
 
 	if [[ -z ${REPLACED_BY_VERSION} ]]; then
 		multilib_pkg_postrm() {
-			rm -f "${EROOT}"/usr/$(get_libdir)/gio/modules/giomodule.cache
+			rm -f "${EROOT}"/usr/$(get_libdir)/gio/modules/giomodule.cache || die
 		}
 		multilib_foreach_abi multilib_pkg_postrm
-		rm -f "${EROOT}"/usr/share/glib-2.0/schemas/gschemas.compiled
+		rm -f "${EROOT}"/usr/share/glib-2.0/schemas/gschemas.compiled || die
 	fi
 }

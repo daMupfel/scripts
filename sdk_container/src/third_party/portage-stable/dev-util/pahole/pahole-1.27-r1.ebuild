@@ -45,7 +45,8 @@ DEPEND="${RDEPEND}"
 DOCS=( README README.ctracer NEWS )
 
 PATCHES=(
-	"${FILESDIR}"/${PN}-1.10-python-import.patch
+	"${FILESDIR}/${PN}-1.10-python-import.patch"
+	"${FILESDIR}/${PN}-1.27-r1-fix-clang-btf-generation-bug.patch"
 )
 
 src_unpack() {

@@ -29,7 +29,7 @@ else
 	fi
 	S="${WORKDIR}"/${MY_P}
 	BDEPEND="verify-sig? ( sec-keys/openpgp-keys-arnaldocarvalhodemelo )"
-	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~x86"
+	KEYWORDS="amd64 arm arm64 ~loong ppc ppc64 ~riscv x86"
 fi
 
 LICENSE="GPL-2" # only
@@ -45,7 +45,8 @@ DEPEND="${RDEPEND}"
 DOCS=( README README.ctracer NEWS )
 
 PATCHES=(
-	"${FILESDIR}"/${PN}-1.10-python-import.patch
+	"${FILESDIR}/${PN}-1.10-python-import.patch"
+	"${FILESDIR}/${PN}-1.27-r1-fix-clang-btf-generation-bug.patch"
 )
 
 src_unpack() {

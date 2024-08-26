@@ -33,7 +33,7 @@ else
 	VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/jpakkane.gpg
 
 	if [[ ${PV} != *_rc* ]] ; then
-		KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+		KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
 	fi
 fi
 
@@ -82,12 +82,26 @@ python_prepare_all() {
 		# ASAN is unsupported on some targets
 		# https://bugs.gentoo.org/692822
 		-e 's/test_pch_with_address_sanitizer/_&/'
+
+		# clippy-driver fails, but only when run via portage.
+		#
+		#   error[E0463]: can't find crate for `std`
+		#   error: requires `sized` lang_item
+		-e 's/test_rust_clippy/_&/'
 	)
 
 	sed -i "${disable_unittests[@]}" unittests/*.py || die
 
 	# Broken due to python2 script created by python_wrapper_setup
 	rm -r "test cases/frameworks/1 boost" || die
+	# nvcc breaks on essentially any LDFLAGS
+	# https://bugs.gentoo.org/936757
+	# https://github.com/mesonbuild/meson/issues/11234
+	rm -r "test cases/cuda"/* || die
+
+	# The 1.4.2 tarball accidentally contains some untracked files from git master:
+	# - subprojects/bar-0.1/Cargo.toml
+	rm -r "test cases/rust/25 cargo lock/"
 
 	distutils-r1_python_prepare_all
 }

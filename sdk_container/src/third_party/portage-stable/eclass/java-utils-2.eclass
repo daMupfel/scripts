@@ -319,12 +319,15 @@ java-pkg_doexamples() {
 # arguments are passed through to find.
 #
 # @CODE
+# Parameters:
+# $1 - jar file
+# $2 - resource tree directory
+# $* - arguments to pass to find
+#
+# Example:
 #	java-pkg_addres ${PN}.jar resources ! -name "*.html"
 # @CODE
 #
-# @param $1 - jar file
-# @param $2 - resource tree directory
-# @param $* - arguments to pass to find
 java-pkg_addres() {
 	debug-print-function ${FUNCNAME} $*
 
@@ -1134,7 +1137,7 @@ java-pkg_jarfrom() {
 }
 
 # @FUNCTION: java-pkg_getjars
-# @USAGE: [--build-only] [--with-dependencies] <package1>[,<package2>...]
+# @USAGE: [--build-only] [--runtime-only] [--with-dependencies] <package1>[,<package2>...]
 # @DESCRIPTION:
 # Get the classpath provided by any number of packages
 # Among other things, this can be passed to 'javac -classpath' or 'ant -lib'.
@@ -1154,6 +1157,7 @@ java-pkg_jarfrom() {
 # Parameters:
 #	--build-only - makes the jar(s) not added into package.env DEPEND line.
 #	  (assumed automatically when called inside src_test)
+#	--runtime-only - marks the jar(s) not added into package.env RDEPEND line.
 #	--with-dependencies - get jars also from requested package's dependencies
 #	  transitively.
 # $1 - list of packages to get jars from
@@ -1162,6 +1166,7 @@ java-pkg_jarfrom() {
 java-pkg_getjars() {
 	debug-print-function ${FUNCNAME} $*
 
+	local dep_constraint
 	local build_only=""
 	local deep=""
 
@@ -1170,6 +1175,9 @@ java-pkg_getjars() {
 	while [[ "${1}" == --* ]]; do
 		if [[ "${1}" = "--build-only" ]]; then
 			build_only="build"
+			dep_constraint="build"
+		elif [[ "${1}" = "--runtime-only" ]]; then
+			dep_constraint="runtime"
 		elif [[ "${1}" = "--with-dependencies" ]]; then
 			deep="--with-dependencies"
 		else
@@ -1188,7 +1196,7 @@ java-pkg_getjars() {
 	debug-print "${pkgs}:${jars}"
 
 	for pkg in ${pkgs//,/ }; do
-		java-pkg_ensure-dep "${build_only}" "${pkg}"
+		java-pkg_ensure-dep "${dep_constraint}" "${pkg}"
 	done
 
 	for pkg in ${pkgs//,/ }; do
@@ -1637,10 +1645,6 @@ java-pkg_set-current-vm() {
 	export GENTOO_VM=${1}
 }
 
-java-pkg_get-current-vm() {
-	echo ${GENTOO_VM}
-}
-
 java-pkg_current-vm-matches() {
 	has $(java-pkg_get-current-vm) ${@}
 	return $?
@@ -1809,7 +1813,6 @@ java-pkg_ant-tasks-depend() {
 	fi
 }
 
-
 # @FUNCTION: ejunit_
 # @INTERNAL
 # @DESCRIPTION:
@@ -1835,7 +1838,7 @@ ejunit_() {
 	local junit=${1}
 	shift 1
 
-	local cp=$(java-pkg_getjars --with-dependencies ${junit}${pkgs})
+	local cp=$(java-pkg_getjars --build-only --with-dependencies ${junit}${pkgs})
 	if [[ ${1} = -cp || ${1} = -classpath ]]; then
 		cp="${2}:${cp}"
 		shift 2
@@ -1923,7 +1926,7 @@ etestng() {
 
 	local runner=org.testng.TestNG
 	if [[ ${PN} != testng ]]; then
-		local cp=$(java-pkg_getjars --with-dependencies testng)
+		local cp=$(java-pkg_getjars --build-only --with-dependencies testng)
 	else
 		local cp=testng.jar
 	fi
@@ -2030,13 +2033,23 @@ java-utils-2_pkg_preinst() {
 eant() {
 	debug-print-function ${FUNCNAME} $*
 
-	if [[ ${EBUILD_PHASE} = compile ]]; then
-		java-ant-2_src_configure
-	fi
+	if [[ ${!JAVA_PKG_BSFIX*} ]] \
+		|| [[ ${JAVA_ANT_BSFIX_EXTRA_ARGS} ]] \
+		|| [[ ${JAVA_ANT_CLASSPATH_TAGS} ]] \
+		|| [[ ${JAVA_ANT_JAVADOC_INPUT_DIRS} ]] \
+		|| [[ ${JAVA_ANT_REWRITE_CLASSPATH} ]] \
+		|| [[ ${EANT_BUILD_XML} ]] \
+		|| [[ ${!EANT_GENTOO_CLASSPATH*} ]] \
+		|| [[ ${EANT_TEST_GENTOO_CLASSPATH} ]]
+	then
+		if [[ ${EBUILD_PHASE} = compile ]]; then
+			java-ant-2_src_configure
+		fi
 
-	if ! has java-ant-2 ${INHERITED}; then
-		local msg="You should inherit java-ant-2 when using eant"
-		java-pkg_announce-qa-violation "${msg}"
+		if ! has java-ant-2 ${INHERITED}; then
+			local msg="You should inherit java-ant-2 when using eant"
+			java-pkg_announce-qa-violation "${msg}"
+		fi
 	fi
 
 	local antflags="-Dnoget=true -Dmaven.mode.offline=true -Dbuild.sysclasspath=ignore"
@@ -2710,7 +2723,13 @@ java-pkg_build-vm-from-handle() {
 	fi
 
 	for vm in ${JAVA_PKG_WANT_BUILD_VM}; do
-		if java-config-2 --select-vm=${vm} 2>/dev/null; then
+		local java_config
+		for java_config in java-config{,-2}; do
+			type -p ${java_config} >/dev/null && break
+		done
+		[[ -z ${java_config} ]] && die "No java-config binary in PATH"
+
+		if ${java_config} --select-vm=${vm} 2>/dev/null; then
 			echo ${vm}
 			return 0
 		fi
@@ -2813,7 +2832,7 @@ java-pkg_die() {
 	echo "!!! When you file a bug report, please include the following information:" >&2
 	echo "GENTOO_VM=${GENTOO_VM}  CLASSPATH=\"${CLASSPATH}\" JAVA_HOME=\"${JAVA_HOME}\"" >&2
 	echo "JAVACFLAGS=\"${JAVACFLAGS}\" COMPILER=\"${GENTOO_COMPILER}\"" >&2
-	echo "and of course, the output of emerge --info =${P}" >&2
+	echo "and of course, the output of emerge --info =${CATEGORY}/${PF}" >&2
 }
 
 
@@ -2931,7 +2950,7 @@ java-pkg_ensure-dep() {
 #		if is-java-strict; then
 #			die "${dev_error}"
 #		else
-			eqawarn "java-pkg_ensure-dep: ${dev_error}"
+			eqawarn "QA Notice: java-pkg_ensure-dep: ${dev_error}"
 #			eerror "Because you have ${target_pkg} installed,"
 #			eerror "the package will build without problems, but please"
 #			eerror "report this to https://bugs.gentoo.org."
@@ -2942,7 +2961,7 @@ java-pkg_ensure-dep() {
 #		if is-java-strict; then
 #			die "${dev_error}"
 #		else
-			eqawarn "java-pkg_ensure-dep: ${dev_error}"
+			eqawarn "QA Notice: java-pkg_ensure-dep: ${dev_error}"
 #			eerror "The package will build without problems, but may fail to run"
 #			eerror "if you don't have ${target_pkg} installed,"
 #			eerror "so please report this to https://bugs.gentoo.org."

@@ -5,7 +5,7 @@ EAPI=8
 
 # Please bump with app-editors/vim and app-editors/gvim
 
-VIM_VERSION="9.0"
+VIM_VERSION="9.1"
 VIM_PATCHES_VERSION="9.0.2092"
 inherit bash-completion-r1 desktop flag-o-matic prefix toolchain-funcs vim-doc xdg-utils
 
@@ -108,6 +108,11 @@ src_prepare() {
 
 	# Remove src/auto/configure file.
 	rm -v src/auto/configure || die "rm configure failed"
+
+	# bug 908961
+	if use elibc_musl ; then
+		sed -i -e '/ja.sjis/d' src/po/Make_all.mak || die
+	fi
 }
 
 src_configure() {
@@ -185,7 +190,7 @@ src_install() {
 	# default vimrc is installed by vim-core since it applies to
 	# both vim and gvim
 	insinto /etc/vim/
-	newins "${FILESDIR}"/vimrc-r6 vimrc
+	newins "${FILESDIR}"/vimrc-r7 vimrc
 	eprefixify "${ED}"/etc/vim/vimrc
 
 	if use minimal; then

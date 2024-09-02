@@ -26,6 +26,13 @@ DOCS=( ChangeLog INSTALL README UPGRADE )
 # configurable from outside, e.g. /etc/portage/make.conf
 IP_NF_SET_MAX=${IP_NF_SET_MAX:-256}
 
+PATCHES=(
+	"${FILESDIR}/${PN}-bash-completion.patch"
+	"${FILESDIR}/${P}-asan-buffer-overflow.patch"
+	"${FILESDIR}/${P}-argv-bounds.patch"
+	"${FILESDIR}/${P}-fix-building-on-musl.patch"
+)
+
 src_prepare() {
 	default
 	eautoreconf
@@ -102,7 +109,7 @@ src_install() {
 
 	find "${ED}" -name '*.la' -delete || die
 
-	newinitd "${FILESDIR}"/ipset.initd-r6 ${PN}
+	newinitd "${FILESDIR}"/ipset.initd-r7 ${PN}
 	newconfd "${FILESDIR}"/ipset.confd-r1 ${PN}
 	systemd_newunit "${FILESDIR}"/ipset.systemd-r1 ${PN}.service
 	keepdir /var/lib/ipset

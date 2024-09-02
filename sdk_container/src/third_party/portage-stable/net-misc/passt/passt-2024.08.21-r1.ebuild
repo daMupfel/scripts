@@ -8,24 +8,21 @@ inherit toolchain-funcs
 DESCRIPTION="User-mode networking daemons for VMs and namespaces, replacement for Slirp"
 HOMEPAGE="https://passt.top/"
 
-RELEASE_COMMIT="4988e2b"
+RELEASE_COMMIT="1d6142f"
+MY_PV="${PV//./_}.${RELEASE_COMMIT}"
 
 if [[ ${PV} == 9999* ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://passt.top/passt"
 else
-	SRC_URI="https://passt.top/passt/snapshot/passt-${RELEASE_COMMIT}.tar.xz -> ${P}.tar.xz"
-	S="${WORKDIR}/${PN}-${RELEASE_COMMIT}"
-	KEYWORDS="~amd64 ~arm64 ~riscv"
+	SRC_URI="https://passt.top/passt/snapshot/passt-${MY_PV}.tar.xz -> ${PF}.tar.xz"
+	S="${WORKDIR}/${PN}-${MY_PV}"
+	KEYWORDS="~amd64 ~arm64 ~loong ~riscv"
 fi
 
 LICENSE="BSD GPL-2+"
 SLOT="0"
 IUSE="static"
-
-PATCHES=(
-	"${FILESDIR}"/Makefile-2024.03.20.patch
-)
 
 src_prepare() {
 	default
@@ -34,7 +31,7 @@ src_prepare() {
 
 src_compile() {
 	[[ ${PV} != 9999* ]] && export VERSION="${PV}"
-	export prefix="${EPREFIX}/usr" docdir="${EPREFIX}/usr/share/doc/${P}"
+	export prefix="${EPREFIX}/usr" docdir="${EPREFIX}/usr/share/doc/${PF}"
 
 	emake $(usev static)
 }

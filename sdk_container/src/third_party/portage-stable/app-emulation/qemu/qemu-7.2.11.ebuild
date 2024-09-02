@@ -7,13 +7,13 @@ EAPI=8
 # Set to 1 if prebuilt, 0 if not
 # (the construct below is to allow overriding from env for script)
 QEMU_DOCS_PREBUILT=${QEMU_DOCS_PREBUILT:-1}
-QEMU_DOCS_PREBUILT_DEV=sam
-QEMU_DOCS_VERSION="8.0.0"
+QEMU_DOCS_PREBUILT_DEV=ajak
+QEMU_DOCS_VERSION="7.2.0"
 # Default to generating docs (inc. man pages) if no prebuilt; overridden later
 # bug #830088
 QEMU_DOC_USEFLAG="+doc"
 
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{10,11} )
 PYTHON_REQ_USE="ncurses,readline"
 
 FIRMWARE_ABI_VERSION="7.2.0"
@@ -59,7 +59,7 @@ IUSE="accessibility +aio alsa bpf bzip2 capstone +curl debug ${QEMU_DOC_USEFLAG}
 	ncurses nfs nls numa opengl +oss pam +pin-upstream-blobs
 	plugins +png pulseaudio python rbd sasl +seccomp sdl sdl-image selinux
 	+slirp
-	smartcard snappy spice ssh static-user systemtap test udev usb
+	smartcard snappy spice ssh static static-user systemtap test udev usb
 	usbredir vde +vhost-net virgl virtfs +vnc vte xattr xen
 	zstd"
 
@@ -129,16 +129,17 @@ REQUIRED_USE="
 	qemu_softmmu_targets_riscv64? ( fdt )
 	qemu_softmmu_targets_x86_64? ( fdt )
 	sdl-image? ( sdl )
+	static? ( static-user !alsa !gtk !jack !opengl !pam !pulseaudio !plugins !rbd !snappy !udev )
 	static-user? ( !plugins )
 	virgl? ( opengl )
 	virtfs? ( xattr )
 	vnc? ( gnutls )
 	vte? ( gtk )
 	multipath? ( udev )
-	plugins? ( !static-user )
+	plugins? ( !static !static-user )
 "
 for smname in ${IUSE_SOFTMMU_TARGETS} ; do
-	REQUIRED_USE+=" qemu_softmmu_targets_${smname}? ( kernel_linux? ( seccomp ) )"
+	REQUIRED_USE+=" qemu_softmmu_targets_${smname}? ( seccomp ) "
 done
 
 # Dependencies required for qemu tools (qemu-nbd, qemu-img, qemu-io, ...)
@@ -154,12 +155,12 @@ ALL_DEPEND="
 	sys-libs/zlib[static-libs(+)]
 	python? ( ${PYTHON_DEPS} )
 	systemtap? ( dev-debug/systemtap )
-	xattr? ( sys-apps/attr[static-libs(+)] )
-"
+	xattr? ( sys-apps/attr[static-libs(+)] )"
 
 # Dependencies required for qemu tools (qemu-nbd, qemu-img, qemu-io, ...)
 # softmmu targets (qemu-system-*).
 SOFTMMU_TOOLS_DEPEND="
+	sys-libs/libcap-ng[static-libs(+)]
 	>=x11-libs/pixman-0.28.0[static-libs(+)]
 	accessibility? (
 		app-accessibility/brltty[api]
@@ -191,7 +192,6 @@ SOFTMMU_TOOLS_DEPEND="
 	jack? ( virtual/jack )
 	jemalloc? ( dev-libs/jemalloc )
 	jpeg? ( media-libs/libjpeg-turbo:=[static-libs(+)] )
-	kernel_linux? ( sys-libs/libcap-ng[static-libs(+)] )
 	lzo? ( dev-libs/lzo:2[static-libs(+)] )
 	multipath? ( sys-fs/multipath-tools )
 	ncurses? (
@@ -207,7 +207,7 @@ SOFTMMU_TOOLS_DEPEND="
 		media-libs/mesa[egl(+),gbm(+)]
 	)
 	pam? ( sys-libs/pam )
-	png? ( >=media-libs/libpng-1.6.34:=[static-libs(+)] )
+	png? ( media-libs/libpng:0=[static-libs(+)] )
 	pulseaudio? ( media-libs/libpulse )
 	rbd? ( sys-cluster/ceph )
 	sasl? ( dev-libs/cyrus-sasl[static-libs(+)] )
@@ -221,8 +221,8 @@ SOFTMMU_TOOLS_DEPEND="
 	smartcard? ( >=app-emulation/libcacard-2.5.0[static-libs(+)] )
 	snappy? ( app-arch/snappy:= )
 	spice? (
-		>=app-emulation/spice-protocol-0.14.0
-		>=app-emulation/spice-0.14.0[static-libs(+)]
+		>=app-emulation/spice-protocol-0.12.3
+		>=app-emulation/spice-0.12.0[static-libs(+)]
 	)
 	ssh? ( >=net-libs/libssh-0.8.6[static-libs(+)] )
 	udev? ( virtual/libudev:= )
@@ -256,8 +256,7 @@ X86_FIRMWARE_DEPEND="
 			>=sys-firmware/seabios-bin-${SEABIOS_VERSION}
 		)
 		sys-firmware/sgabios
-	)
-"
+	)"
 PPC_FIRMWARE_DEPEND="
 	pin-upstream-blobs? (
 		~sys-firmware/seabios-bin-${SEABIOS_VERSION}
@@ -287,34 +286,35 @@ BDEPEND="
 	)
 "
 CDEPEND="
-	${ALL_DEPEND//\[static-libs(+)]}
-	${SOFTMMU_TOOLS_DEPEND//\[static-libs(+)]}
+	!static? (
+		${ALL_DEPEND//\[static-libs(+)]}
+		${SOFTMMU_TOOLS_DEPEND//\[static-libs(+)]}
+	)
 	qemu_softmmu_targets_i386? ( ${X86_FIRMWARE_DEPEND} )
 	qemu_softmmu_targets_x86_64? ( ${X86_FIRMWARE_DEPEND} )
 	qemu_softmmu_targets_ppc? ( ${PPC_FIRMWARE_DEPEND} )
 	qemu_softmmu_targets_ppc64? ( ${PPC_FIRMWARE_DEPEND} )
 "
-DEPEND="
-	${CDEPEND}
+DEPEND="${CDEPEND}
 	kernel_linux? ( >=sys-kernel/linux-headers-2.6.35 )
-	static-user? ( ${ALL_DEPEND} )
-"
-RDEPEND="
-	${CDEPEND}
+	static? (
+		${ALL_DEPEND}
+		${SOFTMMU_TOOLS_DEPEND}
+	)
+	static-user? ( ${ALL_DEPEND} )"
+RDEPEND="${CDEPEND}
 	acct-group/kvm
 	selinux? (
 		sec-policy/selinux-qemu
 		sys-libs/libselinux
-	)
-"
+	)"
 
 PATCHES=(
-	"${FILESDIR}"/${PN}-8.0.0-disable-keymap.patch
-	"${FILESDIR}"/${PN}-8.0.0-make.patch
+	"${FILESDIR}"/${PN}-5.2.0-disable-keymap.patch
+	"${FILESDIR}"/${PN}-6.0.0-make.patch
 	"${FILESDIR}"/${PN}-7.1.0-also-build-virtfs-proxy-helper.patch
 	"${FILESDIR}"/${PN}-7.1.0-capstone-include-path.patch
 	"${FILESDIR}"/${PN}-7.2.0-disable-gmp.patch
-	"${FILESDIR}"/${PN}-8.0.0-remove-python-meson-check.patch
 )
 
 QA_PREBUILT="
@@ -330,8 +330,7 @@ QA_PREBUILT="
 	usr/share/qemu/u-boot.e500
 "
 
-QA_WX_LOAD="
-	usr/bin/qemu-i386
+QA_WX_LOAD="usr/bin/qemu-i386
 	usr/bin/qemu-x86_64
 	usr/bin/qemu-alpha
 	usr/bin/qemu-arm
@@ -451,6 +450,14 @@ src_prepare() {
 	# Use correct toolchain to fix cross-compiling
 	tc-export AR AS LD NM OBJCOPY PKG_CONFIG RANLIB STRINGS
 	export WINDRES=${CHOST}-windres
+
+	# Workaround for bug #938302
+	if use systemtap && ! has_version "dev-debug/systemtap[dtrace-symlink(-)]" ; then
+		cat >> "${S}"/configs/meson/linux.txt <<-EOF || die
+		[binaries]
+		dtrace='stap-dtrace'
+		EOF
+	fi
 
 	# Verbose builds
 	MAKEOPTS+=" V=1"
@@ -629,6 +636,7 @@ qemu_src_configure() {
 		conf_opts+=(
 			--enable-linux-user
 			--disable-system
+			--disable-blobs
 			--disable-tools
 			--disable-cap-ng
 			--disable-seccomp
@@ -643,29 +651,30 @@ qemu_src_configure() {
 			--enable-cap-ng
 			--enable-seccomp
 		)
-		local static_flag="none"
+		local static_flag="static"
 		;;
 	tools)
 		conf_opts+=(
 			--disable-linux-user
 			--disable-system
+			--disable-blobs
 			--enable-tools
 			--enable-cap-ng
 		)
-		local static_flag="none"
+		local static_flag="static"
 		;;
 	esac
 
 	local targets="${buildtype}_targets"
 	[[ -n ${targets} ]] && conf_opts+=( --target-list="${!targets}" )
 
-	# Add support for SystemTAP
-	use systemtap && conf_opts+=( --enable-trace-backends="dtrace" )
+	# Add support for SystemTap
+	use systemtap && conf_opts+=( --enable-trace-backend=dtrace )
 
 	# We always want to attempt to build with PIE support as it results
 	# in a more secure binary. But it doesn't work with static or if
 	# the current GCC doesn't have PIE support.
-	if [[ ${static_flag} != "none" ]] && use ${static_flag}; then
+	if use ${static_flag}; then
 		conf_opts+=( --static --disable-pie )
 	else
 		tc-enables-pie && conf_opts+=( --enable-pie )

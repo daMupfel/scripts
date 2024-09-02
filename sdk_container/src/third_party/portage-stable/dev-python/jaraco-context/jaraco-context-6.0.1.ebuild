@@ -5,7 +5,6 @@
 EAPI=8
 
 DISTUTILS_USE_PEP517=flit
-PYPI_NO_NORMALIZE=1
 PYPI_PN=${PN/-/.}
 PYTHON_COMPAT=( python3_{10..13} pypy3 )
 
@@ -19,7 +18,7 @@ HOMEPAGE="
 
 LICENSE="MIT"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~arm64-macos ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos ~x64-macos ~x64-solaris"
 
 RDEPEND="
 	$(python_gen_cond_dep '
@@ -33,6 +32,11 @@ BDEPEND="
 "
 
 distutils_enable_tests pytest
+
+EPYTEST_DESELECT=(
+	# Internet
+	jaraco/context/__init__.py::jaraco.context.repo_context
+)
 
 src_configure() {
 	grep -q 'build-backend = "setuptools' pyproject.toml ||

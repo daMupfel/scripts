@@ -3,7 +3,7 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{11..13} )
 inherit autotools flag-o-matic python-any-r1 systemd toolchain-funcs multilib-minimal
 
 MY_P="${P/mit-}"
@@ -16,7 +16,7 @@ S=${WORKDIR}/${MY_P}/src
 LICENSE="openafs-krb5-a BSD MIT OPENLDAP BSD-2 HPND BSD-4 ISC RSA CC-BY-SA-3.0 || ( BSD-2 GPL-2+ )"
 SLOT="0"
 KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~mips ~ppc ppc64 ~riscv ~s390 sparc x86"
-IUSE="cpu_flags_x86_aes doc +keyutils lmdb nls openldap +pkinit selinux +threads test xinetd"
+IUSE="cpu_flags_x86_aes doc +keyutils lmdb nls openldap +pkinit selinux test xinetd"
 
 RESTRICT="!test? ( test )"
 
@@ -81,7 +81,6 @@ multilib_src_configure() {
 		$(use_with openldap ldap) \
 		$(use_enable nls) \
 		$(use_enable pkinit) \
-		$(use_enable threads thread-support) \
 		$(use_with lmdb) \
 		$(use_with keyutils) \
 		--without-hesiod \
@@ -91,6 +90,7 @@ multilib_src_configure() {
 		--enable-dns-for-realm \
 		--enable-kdc-lookaside-cache \
 		--with-system-verto \
+		--enable-thread-support \
 		--disable-rpath
 }
 
@@ -116,12 +116,6 @@ multilib_src_install_all() {
 	cd ..
 	dodoc README
 
-	if use doc; then
-		dodoc -r doc/html
-		docinto pdf
-		dodoc doc/pdf/*.pdf
-	fi
-
 	newinitd "${FILESDIR}"/mit-krb5kadmind.initd-r2 mit-krb5kadmind
 	newinitd "${FILESDIR}"/mit-krb5kdc.initd-r2 mit-krb5kdc
 	newinitd "${FILESDIR}"/mit-krb5kpropd.initd-r2 mit-krb5kpropd
@@ -141,6 +135,8 @@ multilib_src_install_all() {
 	newins "${ED}/usr/share/doc/${PF}/examples/kdc.conf" kdc.conf.example
 
 	if use openldap ; then
+		dodoc "${S}/plugins/kdb/ldap/libkdb_ldap/kerberos.ldif"
+		dodoc "${S}/plugins/kdb/ldap/libkdb_ldap/kerberos.openldap.ldif"
 		insinto /etc/openldap/schema
 		doins "${S}/plugins/kdb/ldap/libkdb_ldap/kerberos.schema"
 	fi
@@ -148,5 +144,11 @@ multilib_src_install_all() {
 	if use xinetd ; then
 		insinto /etc/xinetd.d
 		newins "${FILESDIR}/kpropd.xinetd" kpropd
+	fi
+
+	if use doc; then
+		dodoc -r doc/html
+		docinto pdf
+		dodoc doc/pdf/*.pdf
 	fi
 }

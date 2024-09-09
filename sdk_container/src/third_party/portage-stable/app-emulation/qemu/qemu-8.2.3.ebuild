@@ -47,7 +47,7 @@ else
 	fi
 
 	S="${WORKDIR}/${MY_P}"
-	[[ "${PV}" != *_rc* ]] && KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~x86"
+	[[ "${PV}" != *_rc* ]] && KEYWORDS="amd64 ~arm arm64 ~loong ~ppc ppc64 ~riscv x86"
 fi
 
 DESCRIPTION="QEMU + Kernel-based Virtual Machine userland tools"
@@ -280,6 +280,7 @@ BDEPEND="
 	$(python_gen_impl_dep)
 	dev-lang/perl
 	>=dev-build/meson-0.63.0
+	app-alternatives/ninja
 	dev-python/pip[${PYTHON_USEDEP}]
 	virtual/pkgconfig
 	doc? (
@@ -473,6 +474,14 @@ src_prepare() {
 	# Use correct toolchain to fix cross-compiling
 	tc-export AR AS LD NM OBJCOPY PKG_CONFIG RANLIB STRINGS
 	export WINDRES=${CHOST}-windres
+
+	# Workaround for bug #938302
+	if use systemtap && ! has_version "dev-debug/systemtap[dtrace-symlink(-)]" ; then
+		cat >> "${S}"/configs/meson/linux.txt <<-EOF || die
+		[binaries]
+		dtrace='stap-dtrace'
+		EOF
+	fi
 
 	# Verbose builds
 	MAKEOPTS+=" V=1"
@@ -680,7 +689,7 @@ qemu_src_configure() {
 	local targets="${buildtype}_targets"
 	[[ -n ${targets} ]] && conf_opts+=( --target-list="${!targets}" )
 
-	# Add support for SystemTAP
+	# Add support for SystemTap
 	use systemtap && conf_opts+=( --enable-trace-backends="dtrace" )
 
 	# We always want to attempt to build with PIE support as it results

@@ -1,11 +1,11 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 EGO_PN=github.com/docker/docker
 MY_PV=${PV/_/-}
-inherit linux-info systemd udev golang-vcs-snapshot
-GIT_COMMIT=311b9ff0aa93aa55880e1e5f8871c4fb69583426
+inherit golang-vcs-snapshot linux-info optfeature systemd udev
+GIT_COMMIT=3ab5c7d0036ca8fc43141e83b167456ec79828aa
 
 DESCRIPTION="The core functions you need to create Docker images and run Docker containers"
 HOMEPAGE="https://www.docker.com/"
@@ -14,15 +14,15 @@ SRC_URI="https://github.com/moby/moby/archive/v${MY_PV}.tar.gz -> ${P}.tar.gz"
 LICENSE="Apache-2.0"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~riscv ~x86"
-IUSE="apparmor btrfs +container-init device-mapper overlay seccomp selinux"
+IUSE="apparmor btrfs +container-init +overlay2 seccomp selinux systemd"
 
 DEPEND="
 	acct-group/docker
 	>=dev-db/sqlite-3.7.9:3
 	apparmor? ( sys-libs/libapparmor )
 	btrfs? ( >=sys-fs/btrfs-progs-3.16.1 )
-	device-mapper? ( >=sys-fs/lvm2-2.02.89[thin] )
 	seccomp? ( >=sys-libs/libseccomp-2.2.1 )
+	systemd? ( sys-apps/systemd )
 "
 
 # https://github.com/moby/moby/blob/master/project/PACKAGERS.md#runtime-dependencies
@@ -33,9 +33,8 @@ RDEPEND="
 	sys-process/procps
 	>=dev-vcs/git-1.7
 	>=app-arch/xz-utils-4.9
-	dev-libs/libltdl
-	>=app-containers/containerd-1.7.3[apparmor?,btrfs?,device-mapper?,seccomp?]
-	>=app-containers/runc-1.1.9[apparmor?,seccomp?]
+	>=app-containers/containerd-1.7.21[apparmor?,btrfs?,seccomp?]
+	>=app-containers/runc-1.1.13[apparmor?,seccomp?]
 	!app-containers/docker-proxy
 	container-init? ( >=sys-process/tini-0.19.0[static] )
 	selinux? ( sec-policy/selinux-docker )
@@ -227,12 +226,6 @@ pkg_setup() {
 		"
 	fi
 
-	if use device-mapper; then
-		CONFIG_CHECK+="
-			~BLK_DEV_DM ~DM_THIN_PROVISIONING
-		"
-	fi
-
 	CONFIG_CHECK+="
 		~OVERLAY_FS
 	"
@@ -244,15 +237,16 @@ src_compile() {
 	export DOCKER_GITCOMMIT="${GIT_COMMIT}"
 	export GOPATH="${WORKDIR}/${P}"
 	export VERSION=${PV}
+	tc-export PKG_CONFIG
 
 	# setup CFLAGS and LDFLAGS for separate build target
 	# see https://github.com/tianon/docker-overlay/pull/10
-	export CGO_CFLAGS="-I${ESYSROOT}/usr/include"
-	export CGO_LDFLAGS="-L${ESYSROOT}/usr/$(get_libdir)"
+	CGO_CFLAGS+=" -I${ESYSROOT}/usr/include"
+	CGO_LDFLAGS+=" -L${ESYSROOT}/usr/$(get_libdir)"
 
 	# let's set up some optional features :)
 	export DOCKER_BUILDTAGS=''
-	for gd in btrfs device-mapper overlay; do
+	for gd in btrfs overlay2; do
 		if ! use $gd; then
 			DOCKER_BUILDTAGS+=" exclude_graphdriver_${gd//-/}"
 		fi
@@ -263,6 +257,8 @@ src_compile() {
 			DOCKER_BUILDTAGS+=" $tag"
 		fi
 	done
+
+	export EXCLUDE_AUTO_BUILDTAG_JOURNALD=$(usex systemd '' 'y')
 
 	# build binaries
 	./hack/make.sh dynbinary || die 'dynbinary failed'
@@ -275,6 +271,9 @@ src_install() {
 	use container-init && dosym tini /usr/bin/docker-init
 	dobin bundles/dynbinary-daemon/dockerd
 	dobin bundles/dynbinary-daemon/docker-proxy
+	for f in dockerd-rootless-setuptool.sh dockerd-rootless.sh; do
+		dosym ../share/docker/contrib/${f} /usr/bin/${f}
+	done
 
 	newinitd contrib/init/openrc/docker.initd docker
 	newconfd contrib/init/openrc/docker.confd docker
@@ -307,23 +306,16 @@ pkg_postinst() {
 	elog '  usermod -aG docker <youruser>'
 	elog
 
-	if use device-mapper; then
-		elog " Devicemapper storage driver has been deprecated"
-		elog " It will be removed in a future release"
-		elog
-	fi
-
-	if use overlay; then
-		elog " Overlay storage driver/USEflag has been deprecated"
-		elog " in favor of overlay2 (enabled unconditionally)"
-		elog
-	fi
-
 	if has_version sys-fs/zfs; then
 		elog " ZFS storage driver is available"
 		elog " Check https://docs.docker.com/storage/storagedriver/zfs-driver for more info"
 		elog
 	fi
+
+	optfeature "rootless mode support" sys-apps/shadow
+	optfeature "rootless mode support" sys-apps/rootlesskit
+	optfeature_header "for rootless mode you also need a network stack"
+	optfeature "rootless mode network stack" app-containers/slirp4netns
 }
 
 pkg_postrm() {

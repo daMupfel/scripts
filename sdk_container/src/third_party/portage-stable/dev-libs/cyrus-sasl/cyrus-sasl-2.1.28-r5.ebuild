@@ -15,7 +15,7 @@ SRC_URI+=" https://dev.gentoo.org/~grobian/distfiles/${MY_PATCH_VER}.tar.xz"
 
 LICENSE="BSD-with-attribution"
 SLOT="2"
-KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~mips ~ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
 IUSE="authdaemond berkdb gdbm kerberos ldapdb openldap mysql pam postgres sample selinux sqlite srp ssl static-libs urandom"
 REQUIRED_USE="ldapdb? ( openldap )"
 
@@ -34,6 +34,9 @@ DEPEND="net-mail/mailbase
 	ssl? ( >=dev-libs/openssl-1.0.1h-r2:0=[${MULTILIB_USEDEP}] )"
 RDEPEND="${DEPEND}
 	selinux? ( sec-policy/selinux-sasl )"
+BDEPEND="virtual/libcrypt
+	berkdb? ( >=sys-libs/db-4.8.30-r1:4.8 )
+	gdbm? ( >=sys-libs/gdbm-1.10-r1 )"
 
 MULTILIB_WRAPPED_HEADERS=(
 	/usr/include/sasl/md5global.h
@@ -81,6 +84,15 @@ src_configure() {
 	fi
 
 	multilib-minimal_src_configure
+
+	if ( use berkdb || use gdbm ) && tc-is-cross-compiler ; then
+		mkdir -p "${WORKDIR}"/${P}-build || die
+		cd "${WORKDIR}"/${P}-build || die
+		# We don't care which berkdb version is used as this build is only
+		# temporary for generating an empty sasldb2 later.
+		ECONF_SOURCE="${S}" econf_build \
+			--with-dblib=$(usex berkdb berkeley gdbm)
+	fi
 }
 
 multilib_src_configure() {
@@ -145,6 +157,14 @@ multilib_src_configure() {
 	ECONF_SOURCE="${S}" econf "${myeconfargs[@]}"
 }
 
+src_compile() {
+	multilib-minimal_src_compile
+
+	if ( use berkdb || use gdbm ) && tc-is-cross-compiler ; then
+		emake -C "${WORKDIR}"/${P}-build
+	fi
+}
+
 multilib_src_install() {
 	default
 
@@ -157,13 +177,27 @@ multilib_src_install() {
 		fi
 
 		dosbin saslauthd/testsaslauthd
+		keepdir /etc/sasl2
+
+		if use berkdb || use gdbm ; then
+			einfo "Generating an empty sasldb2 ..."
+			tc-is-cross-compiler && { cd "${WORKDIR}"/${P}-build || die; }
+			export SASL_PATH=./plugins/.libs
+
+			./utils/saslpasswd2 -f "${ED}"/etc/sasl2/sasldb2-empty -p login <<< p \
+				|| die "Failed to generate sasldb2"
+
+			./utils/saslpasswd2 -f "${ED}"/etc/sasl2/sasldb2-empty -d login \
+				|| die "Failed to delete temp user"
+
+			fowners root:mail /etc/sasl2/sasldb2-empty
+			fperms 0640 /etc/sasl2/sasldb2-empty
+		fi
 	fi
 }
 
 multilib_src_install_all() {
 	doman man/*
-
-	keepdir /etc/sasl2
 
 	# Reset docinto to default value (bug #674296)
 	docinto
@@ -199,20 +233,8 @@ multilib_src_install_all() {
 pkg_postinst() {
 	tmpfiles_process ${PN}.conf
 
-	# Generate an empty sasldb2 with correct permissions.
-	if ( use berkdb || use gdbm ) && [[ ! -f "${EROOT}/etc/sasl2/sasldb2" ]] ; then
-		einfo "Generating an empty sasldb2 with correct permissions ..."
-
-		echo "p" | "${EROOT}/usr/sbin/saslpasswd2" -f "${EROOT}/etc/sasl2/sasldb2" -p login \
-			|| die "Failed to generate sasldb2"
-
-		"${EROOT}/usr/sbin/saslpasswd2" -f "${EROOT}/etc/sasl2/sasldb2" -d login \
-			|| die "Failed to delete temp user"
-
-		chown root:mail "${EROOT}/etc/sasl2/sasldb2" \
-			|| die "Failed to chown ${EROOT}/etc/sasl2/sasldb2"
-		chmod 0640 "${EROOT}/etc/sasl2/sasldb2" \
-			|| die "Failed to chmod ${EROOT}/etc/sasl2/sasldb2"
+	if ( use berkdb || use gdbm ) && [[ ! -f ${EROOT}/etc/sasl2/sasldb2 ]] ; then
+		cp -av "${EROOT}"/etc/sasl2/sasldb2{-empty,} || die
 	fi
 
 	if use authdaemond ; then

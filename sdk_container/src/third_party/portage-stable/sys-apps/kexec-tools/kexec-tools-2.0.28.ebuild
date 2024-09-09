@@ -11,11 +11,13 @@ if [[ ${PV} == "9999" ]] ; then
 else
 	SRC_URI="https://www.kernel.org/pub/linux/utils/kernel/kexec/${P/_/-}.tar.xz"
 	[[ "${PV}" == *_rc* ]] || \
-	KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
+	KEYWORDS="amd64 ~arm64 ~ppc64 x86"
 fi
 
 DESCRIPTION="Load another kernel from the currently executing Linux kernel"
 HOMEPAGE="https://kernel.org/pub/linux/utils/kernel/kexec/"
+
+S="${WORKDIR}/${P/_/-}"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -31,8 +33,6 @@ RDEPEND="
 	${DEPEND}
 	selinux? ( sec-policy/selinux-kdump )
 "
-
-S="${WORKDIR}/${P/_/-}"
 
 CONFIG_CHECK="~KEXEC"
 

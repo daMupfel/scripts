@@ -1,9 +1,9 @@
 # Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI="7"
-PYTHON_COMPAT=( python3_{10..12} )
-USE_RUBY="ruby30 ruby31 ruby32"
+EAPI="8"
+PYTHON_COMPAT=( python3_{10..13} )
+USE_RUBY="ruby31 ruby32 ruby33"
 
 # No, I am not calling ruby-ng
 inherit flag-o-matic python-r1 toolchain-funcs multilib-minimal
@@ -20,22 +20,22 @@ if [[ ${PV} == 9999 ]]; then
 	S="${WORKDIR}/${P}/${PN}"
 else
 	SRC_URI="https://github.com/SELinuxProject/selinux/releases/download/${MY_PV}/${MY_P}.tar.gz"
-	KEYWORDS="amd64 arm arm64 ~mips ~riscv x86"
+	KEYWORDS="~amd64 ~arm ~arm64 ~mips ~riscv ~x86"
 	S="${WORKDIR}/${MY_P}"
 fi
 
 LICENSE="public-domain"
 SLOT="0"
-IUSE="python ruby static-libs ruby_targets_ruby30 ruby_targets_ruby31 ruby_targets_ruby32"
+IUSE="python ruby static-libs ruby_targets_ruby31 ruby_targets_ruby32 ruby_targets_ruby33"
 REQUIRED_USE="python? ( ${PYTHON_REQUIRED_USE} )"
 
 RDEPEND="dev-libs/libpcre2:=[static-libs?,${MULTILIB_USEDEP}]
-	>=sys-libs/libsepol-${PV}:=[${MULTILIB_USEDEP}]
+	>=sys-libs/libsepol-${PV}:=[${MULTILIB_USEDEP},static-libs(+)]
 	python? ( ${PYTHON_DEPS} )
 	ruby? (
-		ruby_targets_ruby30? ( dev-lang/ruby:3.0 )
 		ruby_targets_ruby31? ( dev-lang/ruby:3.1 )
 		ruby_targets_ruby32? ( dev-lang/ruby:3.2 )
+		ruby_targets_ruby33? ( dev-lang/ruby:3.3 )
 	)
 	elibc_musl? ( sys-libs/fts-standalone )"
 DEPEND="${RDEPEND}"
@@ -43,7 +43,7 @@ BDEPEND="virtual/pkgconfig
 	python? (
 		>=dev-lang/swig-2.0.9
 		dev-python/pip[${PYTHON_USEDEP}]
-	)
+)
 	ruby? ( >=dev-lang/swig-2.0.9 )"
 
 src_prepare() {
@@ -141,7 +141,7 @@ multilib_src_install() {
 		done
 	fi
 
-	use static-libs || rm "${D}"/usr/lib*/*.a || die
+	use static-libs || rm "${ED}"/usr/$(get_libdir)/*.a || die
 }
 
 pkg_postinst() {

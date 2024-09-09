@@ -1,6 +1,32 @@
 # Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
+# orbea <orbea@riseup.net> (2024-07-19)
+# Unmask the dynarec flag which has arm64 asm.
+games-emulation/rmg -dynarec
+
+# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2024-07-16)
+# Unmask the ugrd flag for installkernel. It is keyworded here
+sys-kernel/installkernel -ugrd
+
+# matoro <matoro_gentoo@matoro.tk> (2024-07-14)
+# Abandoned upstream, does not take bug reports, unsupported in Gentoo.
+# Only remaining use is as a requirement for dev-lang/go on arm{,64}.
+# See #934149, #934151, #936022, #936021
+sys-devel/binutils -gold
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2024-06-23)
+# Pulls in kde-apps/kgpg which is keyworded here
+>=kde-apps/kdeutils-meta-24.05.1 -gpg
+
+# Ionen Wolkens <ionen@gentoo.org> (2024-05-19)
+# jit is supported here
+>=dev-qt/qtdeclarative-6 -jit
+
+# Matt Turner <mattst88@gentoo.org> (2024-05-09)
+# Unmask for keywording bug #931634
+x11-libs/libdrm -video_cards_vmware
+
 # Paul Zander <negril.nx+gentoo@gmail.com> (2024-04-12)
 # Supports 64-bit NEON
 media-libs/opencv -cpu_flags_arm_neon
@@ -12,11 +38,6 @@ media-libs/openpgl -cpu_flags_arm_neon
 # Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2024-03-21)
 # virt-firmware is keyworded here
 sys-kernel/installkernel -efistub
-
-# Mart Raudsepp <leio@gentoo.org> (2024-03-03)
-# media-libs/libdisplay-info (drm) and dev-libs/libliftoff (liftoff)
-# are only available for amd64, arm64 and riscv
->=gui-libs/wlroots-0.17.0 -drm -liftoff
 
 # Joonas Niilola <juippis@gentoo.org> (2024-02-16)
 # Test dependencies not keyworded on this arch.
@@ -74,6 +95,7 @@ dev-libs/botan -cpu_flags_arm_neon
 # Patrick McLean <chutzpah@gentoo.org> (2023-10-03)
 # sys-apps/s6-linux-init has not been tested on this arch
 sys-apps/openrc s6
+sys-apps/openrc-navi s6
 
 # Jon Janzen <jon@jonjanzen.com> (2023-09-11)
 # librttopo has not been tested on this arch
@@ -215,7 +237,7 @@ app-text/enchant voikko
 sys-libs/compiler-rt-sanitizers -asan -dfsan -lsan -msan -hwasan -tsan
 sys-libs/compiler-rt-sanitizers -ubsan -safestack -cfi -scudo
 sys-libs/compiler-rt-sanitizers -gwp-asan -shadowcallstack
-sys-libs/compiler-rt-sanitizers -libfuzzer -profile -xray
+sys-libs/compiler-rt-sanitizers -libfuzzer -profile -xray -rtsan
 >=sys-libs/compiler-rt-sanitizers-16 -orc
 
 # Roy Bamford <neddyseagoon@gentoo.org> (2020-12-07)
@@ -258,11 +280,6 @@ media-video/ffmpeg -rav1e
 # Robin H. Johnson <robbat2@gentoo.org> (2020-07-02)
 # Mask io-uring & zbc pending keywording
 sys-block/fio -io-uring
-
-# Michał Górny <mgorny@gentoo.org> (2020-06-19)
-# Requires dev-util/pahole.
-sys-kernel/gentoo-kernel debug
-sys-kernel/vanilla-kernel debug
 
 # Sam James <sam@gentoo.org> (2020-06-11)
 # PGO works on arm64
@@ -469,10 +486,6 @@ app-text/evince dvi nautilus postscript xps
 # Markus Meier <maekke@gentoo.org> (2013-12-26)
 # Unkeyworded deps, bug #488724
 app-office/gnumeric libgda
-
-# Pacho Ramos <pacho@gentoo.org> (2013-11-28)
-# Missing keywords, bug #492820
-net-im/telepathy-connection-managers sipe
 
 # Sergey Popov <pinkbyte@gentoo.org> (2013-09-06)
 # sci-libs/hdf does not build properly on arm

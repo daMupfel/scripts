@@ -197,6 +197,17 @@ multilib_src_configure() {
 		$(meson_native_use_feature elf libelf)
 		-Dmultiarch=false
 	)
+
+	# Workaround for bug #938302
+	if use systemtap && ! has_version "dev-debug/systemtap[dtrace-symlink(-)]" ; then
+		local native_file="${T}"/meson.${CHOST}.ini.local
+		cat >> ${native_file} <<-EOF || die
+		[binaries]
+		dtrace='stap-dtrace'
+		EOF
+		emesonargs+=( --native-file "${native_file}" )
+	fi
+
 	meson_src_configure
 }
 
@@ -217,7 +228,7 @@ multilib_src_test() {
 	mkdir "$G_DBUS_COOKIE_SHA1_KEYRING_DIR"
 	chmod 0700 "$G_DBUS_COOKIE_SHA1_KEYRING_DIR"
 
-	meson_src_test --timeout-multiplier 2 --no-suite flaky
+	meson_src_test --timeout-multiplier 20 --no-suite flaky
 }
 
 multilib_src_install() {

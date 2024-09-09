@@ -10,13 +10,17 @@
 # This eclass contains a suite of functions to help developers sanely
 # and safely manage toolchain flags in their builds.
 
-case ${EAPI} in
-	6|7|8) ;;
-	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
-esac
-
 if [[ -z ${_FLAG_O_MATIC_ECLASS} ]]; then
 _FLAG_O_MATIC_ECLASS=1
+
+case ${EAPI} in
+	6)
+		ewarn "${CATEGORY}/${PF}: ebuild uses ${ECLASS} with deprecated EAPI ${EAPI}!"
+		ewarn "${CATEGORY}/${PF}: Support will be removed on 2024-10-08. Please port to newer EAPI."
+		;;
+	7|8) ;;
+	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
+esac
 
 inherit toolchain-funcs
 
@@ -129,6 +133,10 @@ _setup-allowed-flags() {
 		# needed for arm64 (and in particular SCS)
 		-ffixed-x18
 
+		# needed for riscv (to prevent unaligned vector access)
+		# See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=115789
+		-mstrict-align -mvector-strict-align
+
 		# gcc 4.5
 		-mno-fma4 -mno-movbe -mno-xop -mno-lwp
 		# gcc 4.6
@@ -139,6 +147,8 @@ _setup-allowed-flags() {
 		-mno-fxsr -mno-hle -mno-rtm -mno-xsave -mno-xsaveopt
 		# gcc 4.9
 		-mno-avx512cd -mno-avx512er -mno-avx512f -mno-avx512pf -mno-sha
+
+		-mevex512 -mno-evex512
 	)
 
 	# Allow some safe individual flags. Should come along with the bug reference.

@@ -5,7 +5,7 @@ EAPI=8
 
 DISTUTILS_EXT=1
 DISTUTILS_USE_PEP517=setuptools
-PYTHON_COMPAT=( python3_{10..12} pypy3 )
+PYTHON_COMPAT=( python3_{10..13} pypy3 )
 
 inherit distutils-r1 optfeature toolchain-funcs
 
@@ -23,7 +23,7 @@ S=${WORKDIR}/lxml-${P}
 
 LICENSE="BSD ElementTree GPL-2 PSF-2"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
 IUSE="doc examples +threads test"
 RESTRICT="!test? ( test )"
 
@@ -71,9 +71,6 @@ python_prepare_all() {
 	sed -i -e '/_ldflags =/s/=.*isysroot.*darwin.*None/= None/' \
 		setupinfo.py || die
 
-	# don't depend on sys-apps/which
-	sed -i -e 's:which:command -v:' Makefile || die
-
 	distutils-r1_python_prepare_all
 }
 
@@ -99,13 +96,6 @@ python_test() {
 	cp -al src/lxml/html/tests "${dir}/html/" || die
 	ln -rs "${S}"/doc "${dir}"/../../ || die
 
-	# test_feedparser_data requires lxml_html_clean
-	# this is the *simplest* way of skipping these without breaking
-	# random other tests, sigh
-	sed -e '/lxml\.html\.clean/d' \
-		-i "${dir}"/html/tests/test_feedparser_data.py || die
-	rm -r "${dir}"/html/tests/*-data/*.data || die
-
 	"${EPYTHON}" test.py -vv --all-levels -p ||
 		die "Tests fail on ${EPYTHON}"
 }
@@ -125,4 +115,5 @@ python_install_all() {
 pkg_postinst() {
 	optfeature "Support for BeautifulSoup as a parser backend" dev-python/beautifulsoup4
 	optfeature "Translates CSS selectors to XPath 1.0 expressions" dev-python/cssselect
+	optfeature "Support for lxml.html.clean sanitizer" dev-python/lxml-html-clean
 }

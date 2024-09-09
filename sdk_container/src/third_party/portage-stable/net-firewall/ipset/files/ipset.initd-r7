@@ -6,6 +6,7 @@ extra_commands="save"
 extra_started_commands="reload"
 
 IPSET_SAVE=${IPSET_SAVE:-/var/lib/ipset/rules-save}
+ipset_name_regex='^[-_.a-zA-Z0-9]+$'
 
 depend() {
     before iptables ip6tables
@@ -64,17 +65,38 @@ reload() {
     # XXX: This does not clean out previously used ipsets that are
     # not in the new saved policy--it can't, because they may still
     # be referenced in the current iptables rules.
-    
 
-    # Build a list of all currently used sets (if any).
-    running_ipset_list=$(ipset save | gawk '/^create/{printf "%s ",$2}')
-	running_ipset_list="${running_ipset_list% }"
+    # Build a list of all currently used sets (if any);
+    # also make sure all sets' names are fully supported.
+    IFS_O=$IFS
+    NEWLINE='
+'
+    local IFS=$NEWLINE
+    for running_ipset in $(ipset -n list) ; do
+      if ! echo "${running_ipset}" | grep -q -E "${ipset_name_regex}" ; then
+        eend 1 "Running set name ('$running_ipset') does not match regex '${ipset_name_regex}'"
+	return 1
+      fi
+      running_ipset_list="$running_ipset_list $running_ipset"
+    done
+    IFS=$IFS_O
+    running_ipset_list="${running_ipset_list# }"
 
     # Check the configured suffix, and make sure there are no collisions
     if test -z "${TEMP_SUFFIX}" ; then
       eend 1 "TEMP_SUFFIX cannot be empty"
       return 1
-    elif echo "$running_ipset_list" | grep -q -E "${TEMP_SUFFIX}( |$)" ; then
+    fi
+
+    # Make sure TEMP_SUFFIX uses only known-safe characters.
+    if ! echo "${TEMP_SUFFIX}" | grep -q -E "${ipset_name_regex}" ; then
+      eend 1 "TEMP_SUFFIX pattern ('$TEMP_SUFFIX') does not match regex '${ipset_name_regex}'"
+      return 1
+    fi
+    # We don't block ., but it must be escaped.
+    temp_suffix_regex=$(echo "${TEMP_SUFFIX}" | sed 's/\./\\./g')
+
+    if echo "$running_ipset_list" | grep -q -E "${temp_suffix_regex}( |$)" ; then
       eend 1 "Existing set(s) match TEMP_SUFFIX pattern ('${TEMP_SUFFIX}'), cannot continue"
       return 1
     fi
@@ -84,15 +106,15 @@ reload() {
 
     # Load up sets from the save file, but rename any set that already
     # exists to a temporary name that we will swap later.
-    if ! cat ${IPSET_SAVE} | sed -r "s/^(create|add) (${running_ipset_list_regex}) /\1 \2${TEMP_SUFFIX} /" | ipset restore ; then
+    if ! cat ${IPSET_SAVE} | sed -r "s/^(create|add) (${running_ipset_list_regex}) /\1 \2${temp_suffix_regex} /" | ipset restore ; then
         eend $? "Failed to load new ipsets"
     fi
 
     # Now for every set name that currently exists, atomically swap it
     # with the temporary new one we created, and then destroy the old set.
     for ipset_name in ${running_ipset_list} ; do
-        ipset swap ${ipset_name} ${ipset_name}${TEMP_SUFFIX} || eend $? "Failed to swap in new ipset $ipset_name"
-        ipset destroy ${ipset_name}${TEMP_SUFFIX} || eend $? "Failed to delete obsolete ipset ${ipset_name}${TEMP_SUFFIX}"
+        ipset swap "${ipset_name}" "${ipset_name}${TEMP_SUFFIX}" || eend $? "Failed to swap in new ipset $ipset_name"
+        ipset destroy "${ipset_name}${TEMP_SUFFIX}" || eend $? "Failed to delete obsolete ipset ${ipset_name}${TEMP_SUFFIX}"
     done
     eend 0
 }

@@ -13,11 +13,11 @@ SRC_URI+=" verify-sig? ( mirror://gnupg/${PN}/${P}.tar.bz2.sig )"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
 IUSE="caps efl emacs gtk keyring ncurses qt5 qt6 wayland X"
 
 DEPEND="
-	>=dev-libs/libassuan-2.1
+	>=dev-libs/libassuan-2.1:=
 	>=dev-libs/libgcrypt-1.6.3
 	>=dev-libs/libgpg-error-1.17
 	efl? ( dev-libs/efl[X] )
@@ -58,7 +58,6 @@ DOCS=( AUTHORS ChangeLog NEWS README THANKS TODO )
 PATCHES=(
 	"${FILESDIR}/${PN}-1.0.0-AR.patch"
 	"${FILESDIR}/${PN}-1.3.0-automagic.patch" # bug #819939, bug #837719
-	"${FILESDIR}/${PN}-1.3.0-ifdef-qt.patch"
 )
 
 src_prepare() {

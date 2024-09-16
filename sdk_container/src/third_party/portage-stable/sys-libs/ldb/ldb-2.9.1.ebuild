@@ -3,7 +3,7 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{10..12} )
 PYTHON_REQ_USE="threads(+)"
 inherit python-single-r1 waf-utils multilib-minimal
 
@@ -13,7 +13,7 @@ SRC_URI="https://samba.org/ftp/pub/${PN}/${P}.tar.gz"
 
 LICENSE="LGPL-3"
 SLOT="0/${PV}"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
 IUSE="doc ldap +lmdb python test"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
@@ -21,9 +21,9 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 
 RESTRICT="!test? ( test )"
 
-TALLOC_VERSION="2.3.4"
-TDB_VERSION="1.4.7"
-TEVENT_VERSION="0.13.0"
+TALLOC_VERSION="2.4.2"
+TDB_VERSION="1.4.10"
+TEVENT_VERSION="0.16.1"
 
 RDEPEND="
 	dev-libs/libbsd[${MULTILIB_USEDEP}]
@@ -56,7 +56,7 @@ WAF_BINARY="${S}/buildtools/bin/waf"
 MULTILIB_WRAPPED_HEADERS=( /usr/include/pyldb.h )
 
 PATCHES=(
-	"${FILESDIR}"/${PN}-1.5.2-optional_packages.patch
+	"${FILESDIR}"/${PN}-2.9.0-optional_packages.patch
 	"${FILESDIR}"/${PN}-1.1.31-fix_PKGCONFIGDIR-when-python-disabled.patch
 	"${FILESDIR}"/${PN}-2.4.2-skip-32bit-time_t-tests.patch
 	"${FILESDIR}"/${PN}-2.5.2-skip-waf-tevent-check.patch

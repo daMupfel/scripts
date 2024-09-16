@@ -1,19 +1,21 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
 VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/gdbm.asc
 inherit libtool multilib-minimal verify-sig
 
 DESCRIPTION="Standard GNU database libraries"
 HOMEPAGE="https://www.gnu.org/software/gdbm/"
-SRC_URI="mirror://gnu/gdbm/${P}.tar.gz"
-SRC_URI+=" verify-sig? ( mirror://gnu/gdbm/${P}.tar.gz.sig )"
+SRC_URI="
+	mirror://gnu/gdbm/${P}.tar.gz
+	verify-sig? ( mirror://gnu/gdbm/${P}.tar.gz.sig )
+"
 
 LICENSE="GPL-3"
 SLOT="0/6" # libgdbm.so version
-KEYWORDS="~alpha amd64 arm arm64 hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
 IUSE="+berkdb nls +readline static-libs test"
 RESTRICT="!test? ( test )"
 

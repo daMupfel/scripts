@@ -17,18 +17,17 @@
 
 #--- END OF EXAMPLES ---
 
-# Ionen Wolkens <ionen@gentoo.org> (2024-04-16)
-# Temporary mask to give a little bit of time before stabilizing
-# the just added dev-qt/qtlanguageserver-6.7.0 for amd64
-dev-qt/qtdeclarative:6 qmlls
+# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2024-07-24)
+# No stable versions of ROCm at the moment
+sys-apps/hwloc rocm
+
+# Zen <dev@pyl.onl> (2024-07-01)
+# UGRD support is still experimental, no stable keywords for now
+sys-kernel/installkernel ugrd
 
 # Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2024-03-17)
 # Experimental, virt-firmware is keyworded only unstable
 sys-kernel/installkernel efistub
-
-# Ionen Wolkens <ionen@gentoo.org> (2024-01-27)
-# dev-python/pyside6 is not stable here yet
-dev-python/QtPy pyside6
 
 # Ionen Wolkens <ionen@gentoo.org> (2024-01-16)
 # cuda (and thus cudnn) are not available in stable
@@ -46,10 +45,6 @@ sys-kernel/gentoo-kernel-bin generic-uki
 # Jon Janzen <jon@jonjanzen.com> (2023-09-11)
 # librttopo has not been stabalized on this arch yet
 dev-db/spatialite rttopo
-
-# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2023-08-21)
-# Mask testing on stable until we have stable qt6
-dev-python/pytest-qt test
 
 # Matt Jolly <kangie@gentoo.org> (2023-08-10)
 # net-libs/ngtcp2 is not marked stable
@@ -75,16 +70,11 @@ net-misc/curl rustls curl_ssl_rustls
 
 # Sam James <sam@gentoo.org> (2022-12-07)
 # Needs unstable media-libs/libvpl
-media-libs/gst-plugins-bad qsv
 media-video/ffmpeg qsv
 
 # Adel Kara Slimane <adel.ks@zegrapher.com> (2022-03-14)
 # needs stabilizing
 media-video/ffmpeg vmaf
-
-# Adel Kara Slimane <adel.ks@zegrapher.com> (2022-02-17)
-# needs stabilizing
-media-video/ffmpeg amf
 
 # Joonas Niilola <juippis@gentoo.org> (2021-08-13)
 # dev-libs/efl is stabilized on amd64.

@@ -1,6 +1,121 @@
 # Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-09-08)
+# Packages needing dev-python/selenium.
+dev-python/aiohttp-cors test
+dev-python/django test
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-09-08)
+# requires <llvm-18
+dev-db/postgresql llvm_slot_15 llvm_slot_16 llvm_slot_17
+media-libs/mesa llvm_slot_15 llvm_slot_16 llvm_slot_17
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-09-08)
+# needs libgdata[gnome-online-accounts], depends on net-libs/webkit-gtk
+gnome-base/gvfs google test
+
+# Michał Górny <mgorny@gentoo.org> (2024-09-08)
+# libcxx is broken on mips, https://bugs.gentoo.org/939297#c2
+sys-devel/clang-common default-libcxx
+sys-devel/clang-runtime libcxx
+
+# Hans de Graaff <graaff@gentoo.org> (2024-09-08)
+# Requires large parts of dev-ruby/rails to be keyworded
+dev-ruby/minitest-hooks test
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-09-07)
+# gui-libs/gtk:4 is not keyworded here
+app-crypt/gcr:4 gtk
+>=app-crypt/pinentry-1.3.0 gtk
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-09-06)
+# media-libs/vidstab is not keyworded
+media-video/ffmpeg vidstab
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-09-06)
+# media-video/rav1e isn't keyworded here
+media-libs/libavif rav1e
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-08-26)
+# dev-util/bpftool and/or sys-devel/bpf-toolchain not keyworded here
+sys-apps/systemd bpf
+media-libs/libv4l bpf
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-08-26)
+# dev-ruby/thor not keyworded here
+app-text/htmltidy test
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-08-25)
+# simplify the dep tree
+app-admin/syslog-ng amqp grpc kafka mongodb smtp test
+app-crypt/pinentry efl
+app-text/doxygen gui
+dev-build/cmake gui
+dev-db/mysql cjk
+dev-db/percona-server cjk
+dev-libs/libisoburn frontend-optional
+dev-python/uvicorn test-rust
+dev-util/glade gjs
+dev-util/pkgcheck emacs
+dev-util/ragel doc
+dev-vcs/git doc subversion
+mail-mta/postfix mongodb
+media-sound/liblc3 test
+net-misc/rsync rrsync
+net-firewall/nftables doc
+dev-util/ccache doc
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-08-25)
+# Some optional emacs dependencies are not keyworded.
+app-editors/emacs gui mailutils
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-08-25)
+# net-libs/webkit-gtk has no mips keywords
+app-editors/emacs xwidgets
+dev-util/glade webkit
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-08-25)
+# alternatives not available on mips
+app-alternatives/awk nawk
+app-alternatives/bc gh
+app-alternatives/lex reflex
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-07-05)
+# Avoid unkeyworded media-gfx/libimagequant
+dev-python/pillow imagequant
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-07-04)
+# kde-frameworks/kservice not keyworded here
+x11-misc/xdg-utils plasma
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-07-01)
+# simplify the dep tree
+dev-python/click doc
+dev-python/cython doc
+dev-python/flake8 doc
+dev-python/flask doc
+dev-python/flit doc
+dev-python/greenlet doc
+dev-python/outcome doc
+dev-python/pytest-cov doc
+dev-python/pytest-trio doc
+dev-python/stevedore doc
+dev-python/sphinx-autodoc-typehints test
+dev-util/maturin doc
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2024-06-29)
+# media-libs/libplacebo is not keyworded
+media-video/ffmpeg libplacebo
+
+# Michał Górny <mgorny@gentoo.org> (2024-05-08)
+# Requires sys-devel/{clang,llvm}:16.
+dev-lang/python jit
+
+# matoro <matoro_gentoo@matoro.tk> (2024-05-01)
+# Sanitizers supported on both 32-bit and 64-bit mips, #779742
+sys-libs/compiler-rt-sanitizers -asan -profile -ubsan -safestack -scudo -xray
+
 # matoro <matoro_gentoo@matoro.tk> (2024-03-21)
 # Test suite is very fragile and doesn't even run on amd64.
 # No real point in running it here right now, bug #804115.
@@ -47,7 +162,7 @@ net-analyzer/rrdtool rados
 
 # matoro <matoro_gentoo@matoro.tk> (2023-11-22)
 # Qt 5 is not keyworded here
-app-admin/setools X
+app-admin/setools X test
 
 # matoro <matoro_gentoo@matoro.tk> (2023-11-22)
 # Qt 5 is not keyworded here
@@ -99,10 +214,6 @@ net-dns/ddclient test
 dev-lang/gnat-gpl -fixed-point
 sys-devel/gcc -fixed-point
 
-# matoro <matoro_gentoo@matoro.tk> (2022-09-14)
-# Not broken, but better wait on profiles: bug #515694
-dev-lang/rust system-llvm
-
 # Matt Turner <mattst88@gentoo.org> (2022-04-18)
 # app-text/nuspell is not keyworded
 app-text/enchant nuspell
@@ -139,14 +250,6 @@ dev-libs/libgudev test
 # dev-python/django is not keyworded here
 dev-python/diskcache test
 
-# Joshua Kinard <kumba@gentoo.org> (2021-05-20)
-# mask USE 'test' on MIPS for setuptools  and jaraco-path due to
-# the very deep dependency chain that is enabled.  Will unmask
-# on a future date.
-# Bug #774216
-dev-python/jaraco-path test
-dev-python/setuptools test
-
 # Sam James <sam@gentoo.org> (2021-02-06)
 # media-sound/sndio is not yet keyworded here
 # bug #769098, bug #769122
@@ -165,7 +268,7 @@ app-text/enchant voikko
 
 # Matt Turner <mattst88@gentoo.org> (2020-08-11)
 # No drivers on this architecture support Vulkan
-media-libs/mesa vulkan vulkan-overlay zink
+media-libs/mesa vulkan vulkan-overlay zink video_cards_zink
 
 # Michał Górny <mgorny@gentoo.org> (2018-01-23)
 # USE=collab requires unkeyworded net-libs/loudmouth & dev-cpp/asio.
@@ -186,10 +289,6 @@ media-libs/sdl-mixer midi
 # Michał Górny <mgorny@gentoo.org> (2017-12-30)
 # Moved from use.mask since they are flags local to one package.
 sys-kernel/mips-sources -ip27 -ip28 -ip30
-
-# Michał Górny <mgorny@gentoo.org> (2017-08-08)
-# Requires USE=opencl that is masked in this profile.
-net-misc/bfgminer adl lm-sensors
 
 # Mart Raudsepp <leio@gentoo.org> (2017-05-27)
 # app-pda/libimobiledevice, app-pda/libplist and co not tested
@@ -264,9 +363,6 @@ media-video/mplayer ladspa
 # Richard Brown <rbrown@gentoo.org> (2007-12-23)
 # app-xemacs/ruby-modes is not keyworded on this arch
 dev-lang/ruby xemacs
-
-# deps missing keywords
-games-strategy/freeciv auth
 
 # Mart Raudsepp <leio@gentoo.org> (2010-09-27)
 # Extra functionality that has external unkeyworded dependencies

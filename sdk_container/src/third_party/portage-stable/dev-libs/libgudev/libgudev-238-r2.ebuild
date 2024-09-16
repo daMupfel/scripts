@@ -1,4 +1,4 @@
-# Copyright 2015-2023 Gentoo Authors
+# Copyright 2015-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -27,6 +27,10 @@ BDEPEND="
 	dev-util/glib-utils
 	virtual/pkgconfig
 "
+
+PATCHES=(
+	"${FILESDIR}"/${PV}-clang18-export-dynamic.patch #926350
+)
 
 multilib_src_configure() {
 	local emesonargs=(

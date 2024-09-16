@@ -1,13 +1,13 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit flag-o-matic
+inherit flag-o-matic unpacker
 
 DESCRIPTION="Utilities to access MS-DOS disks from Unix without mounting them"
 HOMEPAGE="https://www.gnu.org/software/mtools/ https://savannah.gnu.org/projects/mtools"
-SRC_URI="mirror://gnu/${PN}/${P}.tar.bz2"
+SRC_URI="mirror://gnu/${PN}/${P}.tar.lz"
 
 LICENSE="GPL-3"
 SLOT="0"
@@ -25,6 +25,7 @@ RDEPEND="
 	)
 "
 DEPEND="${RDEPEND}"
+BDEPEND="$(unpacker_src_uri_depends)"
 
 src_configure() {
 	if ! use elibc_glibc && ! use elibc_musl ; then

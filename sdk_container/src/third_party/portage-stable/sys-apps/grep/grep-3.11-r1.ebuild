@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -58,6 +58,10 @@ QA_CONFIG_IMPL_DECL_SKIP=(
 	static_assert
 )
 
+PATCHES=(
+	"${FILESDIR}"/${P}-100k-files-dir.patch
+)
+
 src_prepare() {
 	default
 
@@ -66,6 +70,9 @@ src_prepare() {
 		-e "s:@SHELL@:${EPREFIX}/bin/sh:g" \
 		-e "s:@grep@:${EPREFIX}/bin/grep:" \
 		src/egrep.sh || die
+
+	# Drop when grep-3.11-100k-files-dir.patch is gone
+	touch aclocal.m4 config.hin configure {,doc/,gnulib-tests/,lib/,src/,tests/}Makefile.in || die
 }
 
 src_configure() {

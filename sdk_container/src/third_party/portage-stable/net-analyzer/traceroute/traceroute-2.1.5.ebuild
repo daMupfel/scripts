@@ -7,11 +7,11 @@ inherit flag-o-matic toolchain-funcs
 
 DESCRIPTION="Utility to trace the route of IP packets"
 HOMEPAGE="https://traceroute.sourceforge.net/"
-SRC_URI="mirror://sourceforge/traceroute/${P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/traceroute/${P}.tar.gz"
 
 LICENSE="GPL-2 LGPL-2.1"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 arm arm64 hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux"
 IUSE="static"
 
 RDEPEND="!net-misc/iputils[traceroute6(-)]"

@@ -28,7 +28,7 @@ S="${WORKDIR}/${MY_P}"
 
 LICENSE="PSF-2"
 SLOT="${PYVER}"
-KEYWORDS="~alpha amd64 arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ppc64 ~riscv ~s390 sparc x86"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
 IUSE="
 	bluetooth build debug +ensurepip examples gdbm libedit
 	+ncurses pgo +readline +sqlite +ssl test tk valgrind
@@ -45,6 +45,7 @@ RDEPEND="
 	app-arch/xz-utils:=
 	>=dev-libs/expat-2.1:=
 	dev-libs/libffi:=
+	dev-libs/mpdecimal:=
 	dev-python/gentoo-common
 	>=sys-libs/zlib-1.1.3:=
 	virtual/libcrypt:=
@@ -259,6 +260,22 @@ src_configure() {
 			-x test_tools
 		)
 
+		# musl-specific skips
+		use elibc_musl && profile_task_flags+=(
+			# various musl locale deficiencies
+			-x test__locale
+			-x test_c_locale_coercion
+			-x test_locale
+			-x test_re
+
+			# known issues with find_library on musl
+			# https://bugs.python.org/issue21622
+			-x test_ctypes
+
+			# fpathconf, ttyname errno values
+			-x test_os
+		)
+
 		if has_version "app-arch/rpm" ; then
 			# Avoid sandbox failure (attempts to write to /var/lib/rpm)
 			profile_task_flags+=(
@@ -287,6 +304,7 @@ src_configure() {
 		--without-lto
 		--with-system-expat
 		--with-system-ffi
+		--with-system-libmpdec
 		--with-wheel-pkg-dir="${EPREFIX}"/usr/lib/python/ensurepip
 
 		$(use_with debug assertions)
@@ -397,6 +415,22 @@ src_test() {
 		)
 	fi
 
+	# musl-specific skips
+	use elibc_musl && test_opts+=(
+		# various musl locale deficiencies
+		-x test__locale
+		-x test_c_locale_coercion
+		-x test_locale
+		-x test_re
+
+		# known issues with find_library on musl
+		# https://bugs.python.org/issue21622
+		-x test_ctypes
+
+		# fpathconf, ttyname errno values
+		-x test_os
+	)
+
 	# workaround docutils breaking tests
 	cat > Lib/docutils.py <<-EOF || die
 		raise ImportError("Thou shalt not import!")
@@ -420,7 +454,7 @@ src_test() {
 src_install() {
 	local libdir=${ED}/usr/lib/python${PYVER}
 
-	emake DESTDIR="${D}" altinstall
+	emake DESTDIR="${D}" TEST_MODULES=no altinstall
 
 	# Fix collisions between different slots of Python.
 	rm "${ED}/usr/$(get_libdir)/libpython3.so" || die
@@ -450,11 +484,11 @@ src_install() {
 		rm -r "${libdir}"/ensurepip || die
 	fi
 	if ! use sqlite; then
-		rm -r "${libdir}/"{sqlite3,test/test_sqlite*} || die
+		rm -r "${libdir}/"sqlite3 || die
 	fi
 	if ! use tk; then
 		rm -r "${ED}/usr/bin/idle${PYVER}" || die
-		rm -r "${libdir}/"{idlelib,tkinter,test/test_tk*} || die
+		rm -r "${libdir}/"{idlelib,tkinter} || die
 	fi
 
 	ln -s ../python/EXTERNALLY-MANAGED "${libdir}/EXTERNALLY-MANAGED" || die

@@ -1,10 +1,10 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/sed.asc
-inherit flag-o-matic verify-sig
+inherit autotools flag-o-matic verify-sig
 
 DESCRIPTION="Super-useful stream editor"
 HOMEPAGE="https://www.gnu.org/software/sed/"
@@ -13,7 +13,7 @@ SRC_URI+=" verify-sig? ( mirror://gnu/sed/${P}.tar.xz.sig )"
 
 LICENSE="GPL-3+"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~arm64-macos"
+KEYWORDS="~alpha amd64 arm arm64 hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~arm64-macos"
 IUSE="acl nls selinux static"
 
 RDEPEND="
@@ -32,6 +32,12 @@ DEPEND="${RDEPEND}
 "
 BDEPEND="nls? ( sys-devel/gettext )
 	verify-sig? ( sec-keys/openpgp-keys-sed )"
+
+src_prepare() {
+	default
+	# Modern C fixes from latest autotools. bug #900382
+	eautoreconf
+}
 
 src_configure() {
 	use static && append-ldflags -static

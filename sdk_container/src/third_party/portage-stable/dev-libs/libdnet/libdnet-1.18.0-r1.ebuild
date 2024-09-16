@@ -3,9 +3,11 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{10..12} )
 DISTUTILS_EXT=1
 DISTUTILS_OPTIONAL=1
+DISTUTILS_USE_PEP517=setuptools
+
 inherit autotools distutils-r1
 
 DESCRIPTION="Simplified, portable interface to several low-level networking routines"
@@ -18,14 +20,20 @@ SLOT="0"
 KEYWORDS="~alpha amd64 arm ~arm64 ~hppa ~mips ppc ppc64 ~riscv sparc x86"
 IUSE="python test"
 RESTRICT="!test? ( test )"
-
 REQUIRED_USE="python? ( ${PYTHON_REQUIRED_USE} )"
 
-DEPEND="dev-libs/libbsd
-	python? ( ${PYTHON_DEPS} )"
+DEPEND="
+	dev-libs/libbsd
+	python? ( ${PYTHON_DEPS} )
+"
 RDEPEND="${DEPEND}"
-BDEPEND="python? ( dev-python/cython[${PYTHON_USEDEP}] )
-	test? ( dev-libs/check )"
+BDEPEND="
+	python? (
+		${DISTUTILS_DEPS}
+		dev-python/cython[${PYTHON_USEDEP}]
+	)
+	test? ( dev-libs/check )
+"
 
 DOCS=( README.md THANKS )
 
@@ -64,6 +72,7 @@ src_configure() {
 
 src_compile() {
 	default
+
 	if use python; then
 		cd python || die
 		distutils-r1_src_compile

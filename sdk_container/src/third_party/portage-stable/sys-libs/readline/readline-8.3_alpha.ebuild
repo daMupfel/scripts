@@ -40,6 +40,7 @@ if [[ ${PV} == 9999 ]] ; then
 	inherit git-r3
 elif is_release ; then
 	SRC_URI="mirror://gnu/${PN}/${MY_P}.tar.gz"
+	SRC_URI+=" https://dev.gentoo.org/~sam/distfiles/${CATEGORY}/${PN}/readline-8.1-rlfe-c99.patch.xz"
 	SRC_URI+=" verify-sig? ( mirror://gnu/${PN}/${MY_P}.tar.gz.sig )"
 
 	if [[ ${PLEVEL} -gt 0 ]] ; then
@@ -70,6 +71,7 @@ elif is_release ; then
 	fi
 else
 	SRC_URI="mirror://gnu/${PN}/${MY_P}.tar.gz ftp://ftp.cwru.edu/pub/readline/${MY_P}.tar.gz"
+	SRC_URI+=" https://dev.gentoo.org/~sam/distfiles/${CATEGORY}/${PN}/readline-8.1-rlfe-c99.patch.xz"
 	SRC_URI+=" verify-sig? ( mirror://gnu/${PN}/${MY_P}.tar.gz.sig ftp://ftp.cwru.edu/pub/readline/${MY_P}.tar.gz.sig )"
 fi
 
@@ -97,6 +99,7 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-5.0-no_rpath.patch
 	"${FILESDIR}"/${PN}-7.0-headers.patch
 	"${FILESDIR}"/${PN}-8.0-headers.patch
+	"${WORKDIR}"/${PN}-8.1-rlfe-c99.patch
 
 	# TODO: rebase
 	#"${FILESDIR}"/${PN}-8.0-darwin-shlib-versioning.patch
@@ -117,6 +120,7 @@ src_unpack() {
 		fi
 
 		unpack "${MY_P}.tar.gz"
+		unpack readline-8.1-rlfe-c99.patch.xz
 
 		#if [[ ${GENTOO_PATCH_VER} ]]; then
 		#	unpack "${PN}-${GENTOO_PATCH_VER}-patches.tar.xz"

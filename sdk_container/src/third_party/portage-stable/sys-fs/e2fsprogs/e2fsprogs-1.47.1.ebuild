@@ -3,7 +3,7 @@
 
 EAPI=8
 
-inherit flag-o-matic multilib-minimal systemd toolchain-funcs udev
+inherit multilib-minimal systemd toolchain-funcs udev
 
 DESCRIPTION="Standard EXT2/EXT3/EXT4 filesystem utilities"
 HOMEPAGE="http://e2fsprogs.sourceforge.net/"
@@ -11,14 +11,15 @@ SRC_URI="https://www.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v${PV}/$
 
 LICENSE="GPL-2 BSD"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux"
-IUSE="cron fuse nls static-libs test +tools"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux"
+IUSE="archive cron fuse nls static-libs test +tools"
 RESTRICT="!test? ( test )"
 
 RDEPEND="
 	!sys-libs/${PN}-libs
+	archive? ( app-arch/libarchive:= )
 	cron? ( sys-fs/lvm2[lvm] )
-	fuse? ( sys-fs/fuse:0 )
+	fuse? ( sys-fs/fuse:3 )
 	nls? ( virtual/libintl )
 	tools? ( sys-apps/util-linux )
 "
@@ -44,8 +45,6 @@ PATCHES=(
 	# upgrade. See bug #904093 and bug #904048.
 	"${FILESDIR}"/${PN}-1.47.0-disable-metadata_csum_seed-and-orphan_file-by-default.patch
 
-	"${FILESDIR}"/e2fsprogs-1.47.0-parallel-make.patch
-
 	# Upstream patches (can usually removed with next version bump)
 )
 
@@ -58,6 +57,11 @@ src_prepare() {
 	# violation due to mktexfmt invocation
 	rm -r doc || die "Failed to remove doc dir"
 
+	cat <<-'EOF' > tests/m_rootdir_acl/script || die
+	echo "$test_name: $test_description: skipped (bgo#905221, fails on btrfs)"
+	return 0
+	EOF
+
 	# Prevent included intl cruft from building, bug #81096
 	sed -i -r \
 		-e 's:@LIBINTL@:@LTLIBINTL@:' \
@@ -68,9 +72,6 @@ multilib_src_configure() {
 	# Keep the package from doing silly things, bug #261411
 	export VARTEXFONTS="${T}/fonts"
 
-	# needed for >=musl-1.2.4, bug 908892
-	use elibc_musl && append-cflags -D_FILE_OFFSET_BITS=64
-
 	local myeconfargs=(
 		--with-root-prefix="${EPREFIX}"
 		$(use_with cron crond-dir "${EPREFIX}/etc/cron.d")
@@ -79,6 +80,7 @@ multilib_src_configure() {
 		--enable-symlink-install
 		--enable-elf-shlibs
 		$(tc-has-tls || echo --disable-tls)
+		$(multilib_native_use_with archive libarchive direct)
 		$(multilib_native_use_enable fuse fuse2fs)
 		$(use_enable nls)
 		$(multilib_native_use_enable tools e2initrd-helper)
@@ -111,6 +113,10 @@ multilib_src_configure() {
 }
 
 multilib_src_compile() {
+	# Parallel make issue #936493
+	emake -C lib/et V=1 compile_et
+	emake -C lib/ext2fs V=1 ext2_err.h
+
 	if multilib_is_native_abi && use tools ; then
 		emake V=1
 	else

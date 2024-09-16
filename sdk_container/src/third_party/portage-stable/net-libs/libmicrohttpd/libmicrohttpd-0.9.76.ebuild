@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="8"
@@ -14,7 +14,7 @@ S="${WORKDIR}"/${MY_P}
 
 LICENSE="|| ( LGPL-2.1+ !ssl? ( GPL-2+-with-eCos-exception-2 ) )"
 SLOT="0/12"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86"
 IUSE="+epoll ssl static-libs test +thread-names"
 RESTRICT="!test? ( test )"
 
@@ -30,6 +30,7 @@ PATCHES=( "${FILESDIR}"/${PN}-0.9.75-fix-testsuite-with-lto.patch )
 
 # All checks in libmicrohttpd's configure are correct
 # Gentoo Bug #898662
+# Gentoo Bug #923760
 QA_CONFIG_IMPL_DECL_SKIP=(
 	'pthread_sigmask'
 	'CreateThread'
@@ -64,6 +65,7 @@ QA_CONFIG_IMPL_DECL_SKIP=(
 	'sysctlbyname'
 	'usleep'
 	'nanosleep'
+	'stpncpy'
 )
 
 multilib_src_configure() {

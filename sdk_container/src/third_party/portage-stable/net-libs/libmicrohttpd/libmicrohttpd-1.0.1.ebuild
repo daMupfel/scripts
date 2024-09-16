@@ -14,8 +14,8 @@ S="${WORKDIR}"/${MY_P}
 
 LICENSE="|| ( LGPL-2.1+ !ssl? ( GPL-2+-with-eCos-exception-2 ) )"
 SLOT="0/12"
-KEYWORDS="~alpha amd64 arm arm64 hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86"
-IUSE="+epoll +eventfd ssl static-libs test +thread-names"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
+IUSE="debug +epoll +eventfd ssl static-libs test +thread-names"
 REQUIRED_USE="epoll? ( kernel_linux )"
 RESTRICT="!test? ( test )"
 
@@ -48,7 +48,7 @@ pkg_pretend() {
 
 multilib_src_configure() {
 	local itc_type
-	if use eventfd ; then
+	if use eventfd; then
 		itc_type="eventfd"
 	else
 		itc_type="pipe"
@@ -57,16 +57,17 @@ multilib_src_configure() {
 	econf \
 		--enable-shared \
 		$(use_enable static-libs static) \
-		--disable-nls \
 		--enable-bauth \
 		--enable-dauth \
-		--disable-examples \
 		--enable-messages \
 		--enable-postprocessor \
 		--enable-httpupgrade \
+		--disable-examples \
+		--disable-tools \
 		--disable-experimental \
 		--disable-heavy-tests \
 		--enable-itc=${itc_type} \
+		$(use_enable debug asserts) \
 		$(use_enable thread-names) \
 		$(use_enable epoll) \
 		$(use_enable test curl) \

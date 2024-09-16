@@ -1,17 +1,17 @@
 # Copyright 2014-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
 inherit toolchain-funcs
 
 DESCRIPTION="Tools and library to manipulate EFI variables"
-HOMEPAGE="https://github.com/rhinstaller/efivar"
-SRC_URI="https://github.com/rhinstaller/efivar/releases/download/${PV}/${P}.tar.bz2"
+HOMEPAGE="https://github.com/rhboot/efivar"
+SRC_URI="https://github.com/rhboot/efivar/archive/refs/tags/${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0/1"
-KEYWORDS="amd64 arm arm64 ~loong ppc64 ~riscv x86"
+KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc64 ~riscv ~x86"
 IUSE="test"
 RESTRICT="!test? ( test )"
 
@@ -29,16 +29,6 @@ DEPEND="${RDEPEND}
 
 src_prepare() {
 	local PATCHES=(
-		"${FILESDIR}"/efivar-38-march-native.patch
-		"${FILESDIR}"/efivar-38-Makefile-dep.patch
-		"${FILESDIR}"/efivar-38-binutils-2.36.patch
-		"${FILESDIR}"/efivar-38-ld-locale.patch
-		"${FILESDIR}"/efivar-38-glibc-2.36.patch
-		"${FILESDIR}"/efivar-38-lld-fixes.patch
-		"${FILESDIR}"/efivar-38-efisecdb-musl.patch
-		"${FILESDIR}"/efivar-38-efisecdb-optarg.patch
-		"${FILESDIR}"/efivar-38-64bit-off_t.patch
-
 		# Rejected upstream, keep this for ia64 support
 		"${FILESDIR}"/efivar-38-ia64-relro.patch
 	)
@@ -52,7 +42,8 @@ src_configure() {
 
 	tc-ld-disable-gold
 
-	export libdir="/usr/$(get_libdir)"
+	export PREFIX="${EPREFIX}/usr"
+	export LIBDIR="${EPREFIX}/usr/$(get_libdir)"
 
 	# https://bugs.gentoo.org/562004
 	unset LIBS
@@ -67,6 +58,11 @@ src_configure() {
 
 	# Used by tests/Makefile
 	export GRUB_PREFIX=grub
+}
+
+src_compile() {
+	# HOST_MARCH: https://bugs.gentoo.org/831334
+	emake HOST_MARCH=
 }
 
 src_test() {

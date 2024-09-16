@@ -10,7 +10,7 @@ if [[ ${PV} == 9999 ]] ; then
 	inherit git-r3
 else
 	SRC_URI="https://www.kernel.org/pub/linux/utils/net/${PN}/${P}.tar.xz"
-	KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86"
+	KEYWORDS="~alpha amd64 arm arm64 hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86"
 fi
 
 DESCRIPTION="kernel routing and traffic control utilities"
@@ -55,6 +55,7 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-6.6.0-configure-Add-_GNU_SOURCE-to-strlcpy-configure-test.patch
 	"${FILESDIR}"/${PN}-6.6.0-revert-CONF_USR_DIR.patch
 	"${FILESDIR}"/${PN}-6.6.0-makefile-use-usr-share-config.patch
+	"${FILESDIR}"/${PN}-6.6.0-musl-c99.patch # bug #922622
 )
 
 src_prepare() {

@@ -1,12 +1,17 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
 DESCRIPTION="OpenPGP keys used for Gentoo releases (snapshots, stages)"
 HOMEPAGE="https://www.gentoo.org/downloads/signatures/"
-SRC_URI="https://dev.gentoo.org/~mgorny/dist/openpgp-keys/gentoo-release.asc.${PV}.gz
-	test? ( https://dev.gentoo.org/~mgorny/dist/openpgp-keys/gentoo-release-test-sigs-20190224.tar.gz )"
+SRC_URI="
+	https://dev.gentoo.org/~mgorny/dist/openpgp-keys/gentoo-release.asc.${PV}.gz
+	test? (
+		https://dev.gentoo.org/~mgorny/dist/openpgp-keys/gentoo-release-test-sigs-20190224.tar.gz
+	)
+"
+S=${WORKDIR}
 
 LICENSE="public-domain"
 SLOT="0"
@@ -14,9 +19,9 @@ KEYWORDS="~alpha amd64 arm arm64 hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 
 IUSE="test"
 RESTRICT="!test? ( test )"
 
-DEPEND="test? ( app-crypt/gnupg )"
-
-S=${WORKDIR}
+BDEPEND="
+	test? ( app-crypt/gnupg )
+"
 
 # Keys included:
 # DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D

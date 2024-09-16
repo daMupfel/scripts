@@ -19,7 +19,7 @@ IUSE="cet debuginfod doc gold gprofng hardened multitarget +nls pgo +plugins sta
 # PATCH_DEV          - Use download URI https://dev.gentoo.org/~{PATCH_DEV}/distfiles/...
 #                      for the patchsets
 
-PATCH_VER=4
+PATCH_VER=6
 PATCH_DEV=dilfridge
 
 if [[ ${PV} == 9999* ]]; then
@@ -32,7 +32,7 @@ else
 	[[ -z ${PATCH_VER} ]] || SRC_URI="${SRC_URI}
 		https://dev.gentoo.org/~${PATCH_DEV}/distfiles/binutils-${PATCH_BINUTILS_VER}-patches-${PATCH_VER}.tar.xz"
 	SLOT=$(ver_cut 1-2)
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
 fi
 
 #
@@ -60,6 +60,10 @@ RDEPEND="
 DEPEND="${RDEPEND}"
 BDEPEND="
 	doc? ( sys-apps/texinfo )
+	pgo? (
+		dev-util/dejagnu
+		app-alternatives/bc
+	)
 	test? (
 		dev-util/dejagnu
 		app-alternatives/bc
@@ -259,7 +263,7 @@ src_configure() {
 		$(use_with zstd)
 
 		# Disable modules that are in a combined binutils/gdb tree, bug #490566
-		--disable-{gdb,libdecnumber,readline,sim}
+		--disable-{gdb,gdbserver,libbacktrace,libdecnumber,readline,sim}
 		# Strip out broken static link flags: https://gcc.gnu.org/PR56750
 		--without-stage1-ldflags
 		# Change SONAME to avoid conflict across {native,cross}/binutils, binutils-libs. bug #666100
@@ -303,6 +307,9 @@ src_configure() {
 
 			if use hardened ; then
 				myconf+=(
+					# TOOD: breaks glibc test suite
+					#--enable-error-execstack=yes
+					#--enable-error-rwx-segments=yes
 					--enable-default-execstack=no
 				)
 			fi
@@ -319,10 +326,20 @@ src_configure() {
 		)
 	fi
 
+	if use test || { use pgo && tc-is-lto ; } ; then
+		# -Wa,* needs to be consistent everywhere or lto-wrapper will complain
+		filter-flags '-Wa,*'
+	fi
+
 	if ! is_cross ; then
-		myconf+=( $(use_enable pgo pgo-build lto) )
+		myconf+=( $(use_enable pgo pgo-build $(tc-is-lto && echo "lto" || echo "yes")) )
 
 		if use pgo ; then
+			# We let configure handle it for us because it has to run
+			# the testsuite later on for profiling, and LTO isn't compatible
+			# with the testsuite.
+			filter-lto
+
 			export BUILD_CFLAGS="${CFLAGS}"
 		fi
 	fi
@@ -364,10 +381,24 @@ src_test() {
 	local -x XZ_OPT="-T1"
 	local -x XZ_DEFAULTS="-T1"
 
-	# bug #637066
-	filter-flags -Wall -Wreturn-type
+	(
+		# Tests don't expect LTO
+		filter-lto
 
-	emake -k check
+		# lto-wrapper warnings which confuse tests
+		filter-flags '-Wa,*'
+
+		# bug #637066
+		filter-flags -Wall -Wreturn-type
+
+		emake -k check \
+			CFLAGS_FOR_TARGET="${CFLAGS_FOR_TARGET:-${CFLAGS}}" \
+			CXXFLAGS_FOR_TARGET="${CXXFLAGS_FOR_TARGET:-${CXXFLAGS}}" \
+			LDFLAGS_FOR_TARGET="${LDFLAGS_FOR_TARGET:-${LDFLAGS}}" \
+			CFLAGS="${CFLAGS}" \
+			CXXFLAGS="${CXXFLAGS}" \
+			LDFLAGS="${LDFLAGS}"
+	)
 }
 
 src_install() {
@@ -469,7 +500,7 @@ src_install() {
 pkg_postinst() {
 	# Make sure this ${CTARGET} has a binutils version selected
 	[[ -e ${EROOT}/etc/env.d/binutils/config-${CTARGET} ]] && return 0
-	binutils-config ${CTARGET}-${PV}
+	binutils-config ${CTARGET}-${PV} || eerror binutils-config returned an error
 }
 
 pkg_postrm() {
@@ -486,12 +517,12 @@ pkg_postrm() {
 		choice=${choice//$'\n'/ }
 		choice=${choice/* }
 		if [[ -z ${choice} ]] ; then
-			binutils-config -u ${CTARGET}
+			binutils-config -u ${CTARGET} || eerror binutils-config returned an error
 		else
-			binutils-config ${choice}
+			binutils-config ${choice} || eerror binutils-config returned an error
 		fi
 	elif [[ $(CHOST=${CTARGET} binutils-config -c) == ${CTARGET}-${PV} ]] ; then
-		binutils-config ${CTARGET}-${PV}
+		binutils-config ${CTARGET}-${PV} || eerror binutils-config returned an error
 	fi
 }
 

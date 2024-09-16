@@ -14,7 +14,7 @@ else
 	inherit libtool
 	# TODO: Change tarballs to gitlab too...?
 	SRC_URI="mirror://nongnu/${PN}/${P}.tar.xz"
-	KEYWORDS="~alpha amd64 arm arm64 hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
 fi
 
 LICENSE="GPL-3"
@@ -23,23 +23,28 @@ IUSE="+manpager nls +seccomp selinux static-libs zlib"
 
 CDEPEND="
 	>=dev-libs/libpipeline-1.5.0
-	sys-apps/groff
+	>=sys-apps/groff-1.20.0
 	sys-libs/gdbm:=
 	seccomp? ( sys-libs/libseccomp )
-	zlib? ( sys-libs/zlib )"
+	zlib? ( sys-libs/zlib )
+"
 DEPEND="${CDEPEND}"
-BDEPEND="app-arch/xz-utils
+BDEPEND="
+	app-arch/xz-utils
 	virtual/pkgconfig
 	nls? (
 		>=app-text/po4a-0.45
 		sys-devel/gettext
 		virtual/libiconv
 		virtual/libintl
-	)"
-RDEPEND="${CDEPEND}
+	)
+"
+RDEPEND="
+	${CDEPEND}
 	acct-group/man
 	acct-user/man
-	selinux? ( sec-policy/selinux-mandb )"
+	selinux? ( sec-policy/selinux-mandb )
+"
 PDEPEND="manpager? ( app-text/manpager )"
 
 PATCHES=(

@@ -3,7 +3,7 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} pypy3 )
+PYTHON_COMPAT=( python3_{10..13} pypy3 )
 PYTHON_REQ_USE="xml(+),threads(+)"
 
 inherit meson python-r1 tmpfiles
@@ -22,10 +22,12 @@ HOMEPAGE="https://wiki.gentoo.org/wiki/Project:Portage-Tools"
 LICENSE="GPL-2"
 SLOT="0"
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
+IUSE="test"
+RESTRICT="!test? ( test )"
 
 # Need newer Portage for eclean-pkg API, bug #900224
 DEPEND="
-	>=sys-apps/portage-3.0.53[${PYTHON_USEDEP}]
+	>=sys-apps/portage-3.0.57[${PYTHON_USEDEP}]
 "
 RDEPEND="
 	${DEPEND}
@@ -44,6 +46,9 @@ BDEPEND="
 	$(python_gen_cond_dep '
 		dev-python/setuptools[${PYTHON_USEDEP}]
 	' python3_12)
+	test? (
+		dev-python/pytest[${PYTHON_USEDEP}]
+	)
 "
 
 src_prepare() {
@@ -64,6 +69,7 @@ src_configure() {
 my_src_configure() {
 	local emesonargs=(
 		-Dcode-only=${code_only}
+		$(meson_use test tests)
 		-Deprefix="${EPREFIX}"
 		-Ddocdir="${EPREFIX}/usr/share/doc/${PF}"
 	)
@@ -77,7 +83,8 @@ src_compile() {
 }
 
 src_test() {
-	python_foreach_impl meson_src_test --no-rebuild --verbose
+	local -x PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+	python_foreach_impl epytest
 }
 
 src_install() {

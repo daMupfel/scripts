@@ -6,7 +6,7 @@ EAPI=8
 # Re cleanups:
 # 2.5.x is an LTS release so we want to keep it for a while.
 
-inherit autotools flag-o-matic multibuild multilib multilib-minimal preserve-libs
+inherit autotools flag-o-matic multilib multilib-minimal preserve-libs
 inherit ssl-cert toolchain-funcs systemd tmpfiles
 
 MY_PV="$(ver_rs 1-2 _)"
@@ -26,7 +26,7 @@ S="${WORKDIR}"/${PN}-OPENLDAP_REL_ENG_${MY_PV}
 LICENSE="OPENLDAP GPL-2"
 # Subslot added for bug #835654
 SLOT="0/$(ver_cut 1-2)"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux"
 
 IUSE_DAEMON="argon2 +cleartext crypt experimental minimal samba tcpd"
 IUSE_OVERLAY="overlays perl autoca"
@@ -44,7 +44,7 @@ REQUIRED_USE="
 "
 RESTRICT="!test? ( test )"
 
-SYSTEM_LMDB_VER=0.9.31
+SYSTEM_LMDB_VER=0.9.33
 # openssl is needed to generate lanman-passwords required by samba
 COMMON_DEPEND="
 	kernel_linux? ( sys-apps/util-linux )
@@ -148,6 +148,9 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-2.6.1-cloak.patch
 	"${FILESDIR}"/${PN}-2.6.1-flags.patch
 	"${FILESDIR}"/${PN}-2.6.1-fix-missing-mapping.patch
+	#"${FILESDIR}"/${PN}-2.6.6-fix-type-mismatch-lloadd.patch
+	"${FILESDIR}"/${PN}-2.6.x-gnutls-pointer-error.patch
+	#"${FILESDIR}"/${PN}-2.6.x-slapd-pointer-types.patch # included upstream
 )
 
 openldap_filecount() {
@@ -391,8 +394,11 @@ build_contrib_module() {
 	einfo "Compiling contrib-module: $1"
 	local target="${2:-all}"
 	emake \
-		LDAP_BUILD="${BUILD_DIR}" prefix="${EPREFIX}/usr" \
-		CC="${CC}" libexecdir="${EPREFIX}/usr/$(get_libdir)/openldap" \
+		CC="${CC}" \
+		LDAP_BUILD="${BUILD_DIR}" \
+		libexecdir="${EPREFIX}/usr/$(get_libdir)/openldap" \
+		prefix="${EPREFIX}/usr" \
+		STRIP=/bin/true \
 		"${target}"
 	popd &>/dev/null || die
 }
@@ -413,6 +419,10 @@ multilib_src_configure() {
 		--without-fetch
 		$(multilib_native_use_with sasl cyrus-sasl)
 	)
+
+	# error: passing argument 3 of ‘ldap_bv2rdn’ from incompatible pointer type [-Wincompatible-pointer-types]
+	# expected ‘char **’ but argument is of type ‘const char **’
+	#append-flags $(test-flags-CC -Wno-error=incompatible-pointer-types)
 
 	if use experimental ; then
 		# connectionless ldap per bug #342439
@@ -527,7 +537,9 @@ multilib_src_configure() {
 
 	tc-export AR CC CXX
 
-	ECONF_SOURCE="${S}" econf \
+	ECONF_SOURCE="${S}" \
+	STRIP=/bin/true \
+		econf \
 		--libexecdir="${EPREFIX}"/usr/$(get_libdir)/openldap \
 		--localstatedir="${EPREFIX}"/var \
 		--runstatedir="${EPREFIX}"/run \
@@ -563,13 +575,19 @@ src_configure_cxx() {
 	append-ldflags -L"${BUILD_DIR}"/libraries/liblber/.libs -L"${BUILD_DIR}"/libraries/libldap/.libs
 	append-cppflags -I"${BUILD_DIR}"/include
 
-	ECONF_SOURCE="${S}"/contrib/ldapc++ econf "${myconf_ldapcpp[@]}"
+	ECONF_SOURCE="${S}"/contrib/ldapc++ \
+	STRIP=/bin/true \
+		econf \
+		"${myconf_ldapcpp[@]}"
 	popd &>/dev/null || die "popd contrib/ldapc++"
 }
 
 multilib_src_compile() {
 	tc-export AR CC CXX
-	emake CC="$(tc-getCC)" SHELL="${EPREFIX}"/bin/sh
+	emake \
+		CC="$(tc-getCC)" \
+		SHELL="${EPREFIX}"/bin/sh \
+		STRIP="/bin/true"
 
 	if ! use minimal && multilib_is_native_abi ; then
 		if use cxx ; then
@@ -607,8 +625,10 @@ multilib_src_compile() {
 			pushd "${S}/contrib/slapd-modules/samba4" &>/dev/null || die "pushd contrib/slapd-modules/samba4"
 
 			emake \
+				CC="$(tc-getCC)" \
 				LDAP_BUILD="${BUILD_DIR}" \
-				CC="$(tc-getCC)" libexecdir="${EPREFIX}/usr/$(get_libdir)/openldap"
+				libexecdir="${EPREFIX}/usr/$(get_libdir)/openldap" \
+				STRIP=/bin/true
 			popd &>/dev/null || die
 		fi
 
@@ -688,8 +708,12 @@ multilib_src_test() {
 }
 
 multilib_src_install() {
-	emake CC="$(tc-getCC)" \
-		DESTDIR="${D}" SHELL="${EPREFIX}"/bin/sh install
+	emake \
+		CC="$(tc-getCC)" \
+		DESTDIR="${D}" \
+		SHELL="${EPREFIX}"/bin/sh \
+		STRIP=/bin/true \
+		install
 
 	if ! use minimal && multilib_is_native_abi; then
 		# openldap modules go here
@@ -814,6 +838,7 @@ multilib_src_install() {
 multilib_src_install_all() {
 	dodoc ANNOUNCEMENT CHANGES COPYRIGHT README
 	docinto rfc ; dodoc doc/rfc/*.txt
+	rmdir -p "${D}"/var/openldap-lloadd # Created but not used by any part of current codebase.
 }
 
 pkg_preinst() {
